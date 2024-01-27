@@ -433,16 +433,6 @@ public class Shooter implements RobotProperties {
         }
     }
 
-    /**
-     * Sets the speed of the pickup motor to the given value.
-     * 
-     * @param speed
-     *            The speed, from -1.0 to 1.0, to set the pickup motors to.
-     */
-    public void setPickupSpeed(final double speed) {
-        // pickupMotor.set(ControlMode.PercentOutput, speed);
-    }
-
     public void setShooterTiltPosition(final double position) {
         if (position == 0) {
             shooterTiltMotor.set(0);
