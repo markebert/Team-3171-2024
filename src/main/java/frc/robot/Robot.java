@@ -37,7 +37,7 @@ import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 public class Robot extends TimedRobot implements RobotProperties {
 
   // Controllers
-  private XboxController driveController;
+  private XboxController driveController, operatorController;
 
   // Drive Objects
   private SwerveDrive swerveDrive;
@@ -73,6 +73,7 @@ public class Robot extends TimedRobot implements RobotProperties {
   public void robotInit() {
     // Controllers Init
     driveController = new XboxController(0);
+    operatorController = new XboxController(1);
 
     // Drive Controller Init
     swerveDrive = new SwerveDrive(lr_Unit_Config, lf_Unit_Config, rf_Unit_Config, rr_Unit_Config);
