@@ -7,10 +7,13 @@ package frc.robot;
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.revrobotics.ColorSensorV3;
+
 // FRC Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -22,6 +25,8 @@ import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.auton.XboxControllerState;
+import frc.team3171.controllers.Shooter;
+
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 
 /**
@@ -38,6 +43,10 @@ public class Robot extends TimedRobot implements RobotProperties {
   private SwerveDrive swerveDrive;
   private Pigeon2Wrapper gyro;
   private ThreadedPIDController gyroPIDController;
+
+  // Shooter Objects
+  private Shooter shooter;
+  private ColorSensorV3 upperFeedSensor, lowerFeedSensor;
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -67,6 +76,21 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Drive Controller Init
     swerveDrive = new SwerveDrive(lr_Unit_Config, lf_Unit_Config, rf_Unit_Config, rr_Unit_Config);
+
+    // Shooter Controller Init
+    try {
+      shooter = new Shooter();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    upperFeedSensor = new ColorSensorV3(Port.kOnboard);
+    // lowerFeedSensor = new ColorSensorV3(Port.kMXP);
+
+    // Shooter Values
+    SmartDashboard.putNumber("Lower Shooter RPM:", shooter.getLowerShooterVelocity());
+    SmartDashboard.putNumber("Upper Shooter RPM:", shooter.getUpperShooterVelocity());
+    SmartDashboard.putNumber("Shooter Tilt Position:", shooter.getShooterTilt());
 
     // Sensors
     gyro = new Pigeon2Wrapper(GYRO_CAN_ID);
@@ -133,6 +157,9 @@ public class Robot extends TimedRobot implements RobotProperties {
         SmartDashboard.putBoolean("Flipped", false);
       }
     }
+
+    // Colors Sensor Values
+    SmartDashboard.putString("Upper Feed Sensor:", String.format("%s | %d", upperFeedSensor.getColor().toString(), upperFeedSensor.getProximity()));
 
     // Driver Controller Info
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;

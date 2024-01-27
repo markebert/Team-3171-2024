@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 // REV Imports
 import com.revrobotics.CANSparkFlex;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.SparkAbsoluteEncoder;
 import com.revrobotics.SparkPIDController;
 import com.revrobotics.CANSparkBase.ControlType;
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -28,13 +29,13 @@ public class Shooter implements RobotProperties {
 
     // Motor Controllers
     private final CANSparkFlex lowerShooterMotor, upperShooterMotor;
-    private CANSparkMax lowerFeederMotor, upperFeederMotor, shooterTiltMotor;
-    // private final RelativeEncoder pickupArmEncoder;
+    private final CANSparkMax lowerFeederMotor, upperFeederMotor, shooterTiltMotor;
     // private final SparkMaxPIDController pickupArmPIDController;
 
     // PID Controllers
-    private final SparkPIDController lowerShooterPIDController, upperShooterPIDController;
+    private final SparkPIDController lowerShooterPIDController, upperShooterPIDController, shooterTiltPIDController;
     private volatile int lowerShooterTargetRPM, upperShooterTargetRPM;
+    private volatile double shooterTiltTargetPosition;
 
     // Executor Service
     private final ExecutorService executorService;
@@ -93,6 +94,19 @@ public class Shooter implements RobotProperties {
         // upperShooterPIDController.setSmartMotionMaxAccel(1500, 0);
         upperShooterMotor.burnFlash();
         upperShooterTargetRPM = 0;
+
+        shooterTiltMotor.restoreFactoryDefaults();
+        shooterTiltPIDController =  shooterTiltMotor.getPIDController();
+        shooterTiltPIDController.setP(SHOOTER_KP);
+        shooterTiltPIDController.setI(SHOOTER_KI);
+        shooterTiltPIDController.setD(SHOOTER_KD);
+        shooterTiltPIDController.setFF(SHOOTER_KF);
+        shooterTiltPIDController.setOutputRange(-.5, .5);
+        // shooterTiltPidController.setSmartMotionMaxVelocity(2000, 0);
+        // shooterTiltPidController.setSmartMotionMinOutputVelocity(0, 0);
+        // shooterTiltPidController.setSmartMotionMaxAccel(1500, 0);
+        shooterTiltMotor.burnFlash();
+        shooterTiltTargetPosition = 0;
 
         // Initialize the executor service for concurrency
         executorService = Executors.newFixedThreadPool(2);
@@ -290,7 +304,7 @@ public class Shooter implements RobotProperties {
      */
     public void setLowerFeederSpeed(final double speed) {
         if (!lowerFeederExecutorActive.get()) {
-            // lowerFeederMotor.set(speed);
+            lowerFeederMotor.set(speed);
         }
     }
 
@@ -315,10 +329,10 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            // lowerFeederMotor.set(ControlMode.PercentOutput, speed);
+                            lowerFeederMotor.set(speed);
                             Timer.delay(TimedRobot.kDefaultPeriod);
                         }
-                        // lowerFeederMotor.set(ControlMode.PercentOutput, 0);
+                        lowerFeederMotor.set(0);
                     } finally {
                         lowerFeederExecutorActive.set(false);
                     }
@@ -337,7 +351,7 @@ public class Shooter implements RobotProperties {
      */
     public void setUpperFeederSpeed(final double speed) {
         if (!upperFeederExecutorActive.get()) {
-            // upperFeederMotor.set(ControlMode.PercentOutput, speed);
+            upperFeederMotor.set(speed);
         }
     }
 
@@ -362,10 +376,10 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            // upperFeederMotor.set(ControlMode.PercentOutput, speed);
+                            upperFeederMotor.set(speed);
                             Timer.delay(TimedRobot.kDefaultPeriod);
                         }
-                        // upperFeederMotor.set(ControlMode.PercentOutput, 0);
+                        upperFeederMotor.set(0);
                     } finally {
                         upperFeederExecutorActive.set(false);
                     }
@@ -397,7 +411,7 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            // upperFeederMotor.set(ControlMode.PercentOutput, speed);
+                            upperFeederMotor.set(speed);
                             Timer.delay(.02);
                         }
                         endTime = Timer.getFPGATimestamp() + runTime;
@@ -405,10 +419,10 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            // upperFeederMotor.set(ControlMode.PercentOutput, 0);
+                            upperFeederMotor.set(0);
                             Timer.delay(.02);
                         }
-                        // upperFeederMotor.set(ControlMode.PercentOutput, 0);
+                        upperFeederMotor.set(0);
                     } finally {
                         upperFeederExecutorActive.set(false);
                     }
@@ -429,6 +443,19 @@ public class Shooter implements RobotProperties {
         // pickupMotor.set(ControlMode.PercentOutput, speed);
     }
 
+    public void setShooterTiltPosition(final double position) {
+        if (position == 0) {
+            shooterTiltMotor.set(0);
+        } else if (this.shooterTiltTargetPosition != position) {
+            shooterTiltPIDController.setReference(position, ControlType.kPosition);
+        }
+        this.shooterTiltTargetPosition = position;
+    }
+
+    public double getShooterTilt() {
+        return shooterTiltMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).getPosition();
+    }
+
     /**
      * Disables all motors in the {@link Shooter} class.
      */
@@ -437,9 +464,9 @@ public class Shooter implements RobotProperties {
         upperShooterTargetRPM = 0;
         lowerShooterMotor.disable();
         upperShooterMotor.disable();
+        lowerFeederMotor.disable();
+        upperFeederMotor.disable();
         // pickupMotor.set(ControlMode.Disabled, 0);
-        // lowerFeederMotor.set(ControlMode.Disabled, 0);
-        // upperFeederMotor.set(ControlMode.Disabled, 0);
     }
 
 }
