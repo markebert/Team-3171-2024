@@ -31,9 +31,9 @@ public interface RobotProperties {
 
         /** CAN ID Properties **/
         public static final int GYRO_CAN_ID = 10;
-        public static final int LOWER_SHOOTER_CAN_ID = 20, UPPER_SHOOTER_CAN_ID = 21, SHOOTER_TILT_CAN_ID = 30;
-        public static final int LOWER_FEEDER_MASTER_CAN_ID = 22, LOWER_FEEDER_FOLLOWER_CAN_ID = 25;
-        public static final int UPPER_FEEDER_MASTER_CAN_ID = 23, UPPER_FEEDER_FOLLOWER_CAN_ID = 26;
+        public static final int LOWER_SHOOTER_CAN_ID = 17, UPPER_SHOOTER_CAN_ID = 16, SHOOTER_TILT_CAN_ID = 15;
+        public static final int LOWER_FEEDER_MASTER_CAN_ID = 11, LOWER_FEEDER_FOLLOWER_CAN_ID = 12;
+        public static final int UPPER_FEEDER_MASTER_CAN_ID = 13, UPPER_FEEDER_FOLLOWER_CAN_ID = 14;
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = false, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;

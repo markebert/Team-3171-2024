@@ -396,7 +396,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     final double leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getLeftX());
     final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
     final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightX());
-    final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightY());
+    final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getRightY());
 
     shooter.setLowerFeederSpeed(leftStickY);
     shooter.setUpperFeederSpeed(rightStickY);
