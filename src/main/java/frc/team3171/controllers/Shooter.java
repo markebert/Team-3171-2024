@@ -29,7 +29,7 @@ public class Shooter implements RobotProperties {
 
     // Motor Controllers
     private final CANSparkFlex lowerShooterMotor, upperShooterMotor;
-    private final CANSparkMax lowerFeederMotor, upperFeederMotor, shooterTiltMotor;
+    private final CANSparkMax lowerFeederMotorMaster, lowerFeederMotorFollower, upperFeederMotorMaster, upperFeederMotorFollower, shooterTiltMotor;
     // private final SparkMaxPIDController pickupArmPIDController;
 
     // PID Controllers
@@ -57,16 +57,21 @@ public class Shooter implements RobotProperties {
         // Init all of the motors
         lowerShooterMotor = new CANSparkFlex(LOWER_SHOOTER_CAN_ID, MotorType.kBrushless);
         upperShooterMotor = new CANSparkFlex(UPPER_SHOOTER_CAN_ID, MotorType.kBrushless);
-        lowerFeederMotor = new CANSparkMax(LOWER_FEEDER_CAN_ID, MotorType.kBrushless);
-        upperFeederMotor = new CANSparkMax(UPPER_FEEDER_CAN_ID, MotorType.kBrushless);
+        lowerFeederMotorMaster = new CANSparkMax(LOWER_FEEDER_MASTER_CAN_ID, MotorType.kBrushless);
+        lowerFeederMotorFollower = new CANSparkMax(LOWER_FEEDER_FOLLOWER_CAN_ID, MotorType.kBrushless);
+        upperFeederMotorMaster = new CANSparkMax(UPPER_FEEDER_MASTER_CAN_ID, MotorType.kBrushless);
+        upperFeederMotorFollower = new CANSparkMax(UPPER_FEEDER_FOLLOWER_CAN_ID, MotorType.kBrushless);
         shooterTiltMotor = new CANSparkMax(SHOOTER_TILT_CAN_ID, MotorType.kBrushless);
 
         // Set if any motors need to be inverted
         lowerShooterMotor.setInverted(LOWER_SHOOTER_INVERTED);
         upperShooterMotor.setInverted(UPPER_SHOOTER_INVERTED);
-        lowerFeederMotor.setInverted(LOWER_FEEDER_INVERTED);
-        upperFeederMotor.setInverted(UPPER_FEEDER_INVERTED);
+        lowerFeederMotorMaster.setInverted(LOWER_FEEDER_INVERTED);
+        upperFeederMotorMaster.setInverted(UPPER_FEEDER_INVERTED);
         shooterTiltMotor.setInverted(SHOOTER_TILT_INVERTED);
+
+        lowerFeederMotorFollower.follow(lowerFeederMotorMaster, true);
+        upperFeederMotorFollower.follow(upperFeederMotorMaster, true);
 
         // Configure the velocity closed loop values
         lowerShooterMotor.restoreFactoryDefaults();
@@ -304,7 +309,7 @@ public class Shooter implements RobotProperties {
      */
     public void setLowerFeederSpeed(final double speed) {
         if (!lowerFeederExecutorActive.get()) {
-            lowerFeederMotor.set(speed);
+            lowerFeederMotorMaster.set(speed);
         }
     }
 
@@ -329,10 +334,10 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            lowerFeederMotor.set(speed);
+                            lowerFeederMotorMaster.set(speed);
                             Timer.delay(TimedRobot.kDefaultPeriod);
                         }
-                        lowerFeederMotor.set(0);
+                        lowerFeederMotorMaster.set(0);
                     } finally {
                         lowerFeederExecutorActive.set(false);
                     }
@@ -351,7 +356,7 @@ public class Shooter implements RobotProperties {
      */
     public void setUpperFeederSpeed(final double speed) {
         if (!upperFeederExecutorActive.get()) {
-            upperFeederMotor.set(speed);
+            upperFeederMotorMaster.set(speed);
         }
     }
 
@@ -376,10 +381,10 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            upperFeederMotor.set(speed);
+                            upperFeederMotorMaster.set(speed);
                             Timer.delay(TimedRobot.kDefaultPeriod);
                         }
-                        upperFeederMotor.set(0);
+                        upperFeederMotorMaster.set(0);
                     } finally {
                         upperFeederExecutorActive.set(false);
                     }
@@ -411,7 +416,7 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            upperFeederMotor.set(speed);
+                            upperFeederMotorMaster.set(speed);
                             Timer.delay(.02);
                         }
                         endTime = Timer.getFPGATimestamp() + runTime;
@@ -419,10 +424,10 @@ public class Shooter implements RobotProperties {
                             if (DriverStation.isDisabled()) {
                                 break;
                             }
-                            upperFeederMotor.set(0);
+                            upperFeederMotorMaster.set(0);
                             Timer.delay(.02);
                         }
-                        upperFeederMotor.set(0);
+                        upperFeederMotorMaster.set(0);
                     } finally {
                         upperFeederExecutorActive.set(false);
                     }
@@ -454,8 +459,8 @@ public class Shooter implements RobotProperties {
         upperShooterTargetRPM = 0;
         lowerShooterMotor.disable();
         upperShooterMotor.disable();
-        lowerFeederMotor.disable();
-        upperFeederMotor.disable();
+        lowerFeederMotorMaster.disable();
+        upperFeederMotorMaster.disable();
         // pickupMotor.set(ControlMode.Disabled, 0);
     }
 
