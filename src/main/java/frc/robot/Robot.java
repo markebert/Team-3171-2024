@@ -281,7 +281,7 @@ public class Robot extends TimedRobot implements RobotProperties {
   public void teleopPeriodic() {
     // Get the controller states
     final XboxControllerState driveControllerState = new XboxControllerState(driveController);
-    final XboxControllerState operatorControllerState = new XboxControllerState();
+    final XboxControllerState operatorControllerState = new XboxControllerState(operatorController);
 
     // Robot drive controls
     driveControlsPeriodic(driveControllerState);
