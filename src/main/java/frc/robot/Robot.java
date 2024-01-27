@@ -247,7 +247,8 @@ public class Robot extends TimedRobot implements RobotProperties {
           final XboxControllerState operatorControllerState = playbackData.getOperatorControllerState();
 
           // Robot drive controls
-          robotControlsPeriodic(driveControllerState, operatorControllerState);
+          driveControlsPeriodic(driveControllerState);
+          operatorControlsPeriodic(operatorControllerState);
 
           // Checks for new data and when to switch to it
           if ((Timer.getFPGATimestamp() - autonStartTime) >= playbackData.getFPGATimestamp()) {
@@ -283,7 +284,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     final XboxControllerState operatorControllerState = new XboxControllerState();
 
     // Robot drive controls
-    robotControlsPeriodic(driveControllerState, operatorControllerState);
+    driveControlsPeriodic(driveControllerState);
+    operatorControlsPeriodic(operatorControllerState);
 
     // Auton Recording
     final double autonTimeStamp = Timer.getFPGATimestamp() - autonStartTime;
@@ -342,7 +344,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     gyroPIDController.updateSensorLockValue();
   }
 
-  private void robotControlsPeriodic(final XboxControllerState driveControllerState, final XboxControllerState operatorControllerState) {
+  private void driveControlsPeriodic(final XboxControllerState driveControllerState) {
     // Gyro Value
     final double gyroValue = Normalize_Gryo_Value(gyro.getAngle());
 
@@ -386,6 +388,23 @@ public class Robot extends TimedRobot implements RobotProperties {
         gyroPIDController.updateSensorLockValueWithoutReset(-90);
       }
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
+    }
+  }
+
+  private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
+    // Get the needed joystick values after calculating the deadzones
+    final double leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getLeftX());
+    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
+    final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightX());
+    final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightY());
+
+    shooter.setLowerFeederSpeed(leftStickY);
+    shooter.setUpperFeederSpeed(rightStickY);
+
+    if (Math.abs(operatorControllerState.getRightTriggerAxis()) > .02) {
+      shooter.setShooterSpeed(.25, .25);
+    } else {
+      shooter.setShooterSpeed(0, 0);
     }
 
   }
