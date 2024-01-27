@@ -75,7 +75,7 @@ public class Shooter implements RobotProperties {
         lowerShooterPIDController.setI(SHOOTER_KI);
         lowerShooterPIDController.setD(SHOOTER_KD);
         lowerShooterPIDController.setFF(SHOOTER_KF);
-        lowerShooterPIDController.setOutputRange(-1, 1);
+        lowerShooterPIDController.setOutputRange(SHOOTER_MIN, SHOOTER_MAX);
         // lowerShooterPIDController.setSmartMotionMaxVelocity(2000, 0);
         // lowerShooterPIDController.setSmartMotionMinOutputVelocity(0, 0);
         // lowerShooterPIDController.setSmartMotionMaxAccel(1500, 0);
@@ -88,7 +88,7 @@ public class Shooter implements RobotProperties {
         upperShooterPIDController.setI(SHOOTER_KI);
         upperShooterPIDController.setD(SHOOTER_KD);
         upperShooterPIDController.setFF(SHOOTER_KF);
-        upperShooterPIDController.setOutputRange(-1, 1);
+        upperShooterPIDController.setOutputRange(SHOOTER_MIN, SHOOTER_MAX);
         // upperShooterPIDController.setSmartMotionMaxVelocity(2000, 0);
         // upperShooterPIDController.setSmartMotionMinOutputVelocity(0, 0);
         // upperShooterPIDController.setSmartMotionMaxAccel(1500, 0);
@@ -96,12 +96,12 @@ public class Shooter implements RobotProperties {
         upperShooterTargetRPM = 0;
 
         shooterTiltMotor.restoreFactoryDefaults();
-        shooterTiltPIDController =  shooterTiltMotor.getPIDController();
-        shooterTiltPIDController.setP(SHOOTER_KP);
-        shooterTiltPIDController.setI(SHOOTER_KI);
-        shooterTiltPIDController.setD(SHOOTER_KD);
-        shooterTiltPIDController.setFF(SHOOTER_KF);
-        shooterTiltPIDController.setOutputRange(-.5, .5);
+        shooterTiltPIDController = shooterTiltMotor.getPIDController();
+        shooterTiltPIDController.setP(TILT_KP);
+        shooterTiltPIDController.setI(TILT_KI);
+        shooterTiltPIDController.setD(TILT_KD);
+        shooterTiltPIDController.setFF(TILT_KF);
+        shooterTiltPIDController.setOutputRange(TILT_MIN, TILT_MAX);
         // shooterTiltPidController.setSmartMotionMaxVelocity(2000, 0);
         // shooterTiltPidController.setSmartMotionMinOutputVelocity(0, 0);
         // shooterTiltPidController.setSmartMotionMaxAccel(1500, 0);

@@ -32,7 +32,7 @@ public interface RobotProperties {
         /** CAN ID Properties **/
         public static final int GYRO_CAN_ID = 10;
         public static final int LOWER_SHOOTER_CAN_ID = 20, UPPER_SHOOTER_CAN_ID = 21, SHOOTER_TILT_CAN_ID = 30;
-        public static final int LOWER_FEEDER_CAN_ID = 20, UPPER_FEEDER_CAN_ID = 21;
+        public static final int LOWER_FEEDER_CAN_ID = 22, UPPER_FEEDER_CAN_ID = 23;
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = false, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
@@ -59,7 +59,8 @@ public interface RobotProperties {
         /** PID Properties **/
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
         public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_KF = 0, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
-        public static final double SHOOTER_KP = .01, SHOOTER_KI = .0002, SHOOTER_KD = .0001, SHOOTER_KF = 0;
+        public static final double SHOOTER_KP = .01, SHOOTER_KI = .0002, SHOOTER_KD = .0001, SHOOTER_KF = 0, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
+        public static final double TILT_KP = .01, TILT_KI = .0002, TILT_KD = .0001, TILT_KF = 0, TILT_MIN = -.5, TILT_MAX = .5;
 
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";
