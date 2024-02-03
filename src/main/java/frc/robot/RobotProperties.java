@@ -36,12 +36,16 @@ public interface RobotProperties {
         public static final int UPPER_FEEDER_MASTER_CAN_ID = 13, UPPER_FEEDER_FOLLOWER_CAN_ID = 14;
 
         /** Shooter Variables **/
-        public static final boolean LOWER_SHOOTER_INVERTED = false, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
+        public static final boolean LOWER_SHOOTER_INVERTED = false, UPPER_SHOOTER_INVERTED = false, SHOOTER_TILT_INVERTED = false;
         public static final int LOWER_SHOOTER_VELOCITY = 1400, UPPER_SHOOTER_VELOCITY = 3800; // High shot
         public static final int LOWER_SHOOTER_SHORT_VELOCITY = 500, UPPER_SHOOTER_SHORT_VELOCITY = 1925; // Low shot
         public static final int LOWER_SHOOTER_YEET_VELOCITY = 3650, UPPER_SHOOTER_YEET_VELOCITY = 5350; // Yeet shot
         public static final double DESIRED_PERCENT_ACCURACY = .08, DESIRED_PERCENT_ACCURACY_YEET = .05,
                         DESIRED_AT_SPEED_TIME = .06, DESIRED_AT_SPEED_TIME_SHORT = .2; // Accuracy Settings
+
+        public static final double SHOOTER_ENCODER_MIN_POSITION = 97;
+        public static final double SHOOTER_ENCODER_ZERO_POSITION = 25;
+        public static final double SHOOTER_ENCODER_MAX_POSITION = 306;
 
         /** Pickup Variables **/
         public static final int PICKUP_ARM_MAX_CURRENT = 90;
@@ -49,7 +53,7 @@ public interface RobotProperties {
         public static final double PICKUP_SPEED = .55;
 
         /** Feeder Variables **/
-        public static final boolean LOWER_FEEDER_INVERTED = false, UPPER_FEEDER_INVERTED = true;
+        public static final boolean LOWER_FEEDER_INVERTED = false, UPPER_FEEDER_INVERTED = false;
         public static final double SHOOTER_LOWER_FEED_SPEED = .1, SHOOTER_UPPER_FEED_SPEED = .25;
         public static final double REVERSE_LOWER_FEEDER_SPEED = -.75, REVERSE_UPPER_FEEDER_SPEED = -.75;
         public static final double LOWER_FEEDER_SPEED = .3, LOWER_FEEDER_SPEED_SLOW = .2;
@@ -61,7 +65,7 @@ public interface RobotProperties {
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
         public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_KF = 0, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
         public static final double SHOOTER_KP = .01, SHOOTER_KI = .0002, SHOOTER_KD = .0001, SHOOTER_KF = 0, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
-        public static final double TILT_KP = .01, TILT_KI = .0002, TILT_KD = .0001, TILT_KF = 0, TILT_MIN = -.5, TILT_MAX = .5;
+        public static final double TILT_KP = .01, TILT_KI = 0, TILT_KD = -.001, TILT_KF = 0, TILT_MIN = -.4, TILT_MAX = .4;
 
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";

@@ -88,11 +88,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     upperFeedSensor = new ColorSensorV3(Port.kOnboard);
     // lowerFeedSensor = new ColorSensorV3(Port.kMXP);
 
-    // Shooter Values
-    SmartDashboard.putNumber("Lower Shooter RPM:", shooter.getLowerShooterVelocity());
-    SmartDashboard.putNumber("Upper Shooter RPM:", shooter.getUpperShooterVelocity());
-    SmartDashboard.putNumber("Shooter Tilt Position:", shooter.getShooterTilt());
-
     // Sensors
     gyro = new Pigeon2Wrapper(GYRO_CAN_ID);
     gyro.reset();
@@ -196,6 +191,13 @@ public class Robot extends TimedRobot implements RobotProperties {
       SmartDashboard.putString("Left Stick Angle", String.format("%.2f\u00B0", leftStickAngle));
       SmartDashboard.putString("Left Stick Velocity", String.format("%.2f", leftStickMagnitude));
       SmartDashboard.putString("Field Adjusted Angle", String.format("%.2f\u00B0", fieldCorrectedAngle));
+
+      // Shooter Values
+      SmartDashboard.putNumber("Lower Shooter RPM:", shooter.getLowerShooterVelocity());
+      SmartDashboard.putNumber("Upper Shooter RPM:", shooter.getUpperShooterVelocity());
+      SmartDashboard.putString("Shooter Tilt Position:", String.format("%.2f", shooter.getShooterTilt()));
+      SmartDashboard.putString("Tilt:", String.format("%.2f|%.2f", shooter.test(), shooter.testLock()));
+
       swerveDrive.SmartDashboard();
     }
 
@@ -391,21 +393,52 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
   }
 
+  double position = 15;
+  boolean pickupEdgeTrigger = false;
+
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
     // Get the needed joystick values after calculating the deadzones
     final double leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getLeftX());
-    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
+    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY()) / 4;
     final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightX());
     final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getRightY());
 
-    shooter.setLowerFeederSpeed(leftStickY);
-    shooter.setUpperFeederSpeed(rightStickY);
+    // shooter.setLowerFeederSpeed(leftStickY);
 
-    if (Math.abs(operatorControllerState.getRightTriggerAxis()) > .02) {
-      shooter.setShooterSpeed(.25, .25);
+    if (operatorControllerState.getBButton() && !pickupEdgeTrigger) {
+      shooter.setShooterTiltPosition(15);
+      shooter.setLowerFeederSpeed(.5);
+      shooter.setUpperFeederSpeed(.3);
+
+    } else if (operatorControllerState.getBButton()) {
+      if (upperFeedSensor.getColor().toHexString().equals("#8F5A15") || upperFeedSensor.getProximity() > 550) {
+        shooter.setUpperFeederSpeed(0);
+        shooter.setLowerFeederSpeed(0);
+      }
+    } else if (pickupEdgeTrigger) {
+      shooter.runUpperFeeder(-.15, .1);
     } else {
-      shooter.setShooterSpeed(0, 0);
+      shooter.setLowerFeederSpeed(0);
+      shooter.setUpperFeederSpeed(rightStickY);
+
+      double shooterSpeed = operatorControllerState.getRightTriggerAxis() - operatorControllerState.getLeftTriggerAxis();
+      shooter.setShooterSpeed(shooterSpeed, shooterSpeed / 4);
+
+      if (operatorControllerState.getAButton()) {
+        shooter.setShooterTiltPosition(35);
+      } else if (operatorControllerState.getYButton()) {
+        shooter.setShooterTiltPosition(-35);
+      } else {
+        if (leftStickY != 0) {
+          shooter.setShooterTiltSpeed(leftStickY);
+          position = shooter.getAsDouble();
+        } else {
+          shooter.setShooterTiltPosition(position);
+        }
+      }
     }
+
+    pickupEdgeTrigger = operatorControllerState.getBButton();
 
   }
 

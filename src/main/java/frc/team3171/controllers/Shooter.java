@@ -5,6 +5,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.Timer;
@@ -18,14 +20,17 @@ import com.revrobotics.SparkAbsoluteEncoder;
 import com.revrobotics.SparkPIDController;
 import com.revrobotics.CANSparkBase.ControlType;
 import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.SparkAbsoluteEncoder.Type;
 
 // Team 3171 Imports
 import frc.robot.RobotProperties;
+import frc.team3171.HelperFunctions;
+import frc.team3171.sensors.ThreadedPIDController;
 
 /**
  * @author Mark Ebert
  */
-public class Shooter implements RobotProperties {
+public class Shooter implements DoubleSupplier, RobotProperties {
 
     // Motor Controllers
     private final CANSparkFlex lowerShooterMotor, upperShooterMotor;
@@ -33,7 +38,8 @@ public class Shooter implements RobotProperties {
     // private final SparkMaxPIDController pickupArmPIDController;
 
     // PID Controllers
-    private final SparkPIDController lowerShooterPIDController, upperShooterPIDController, shooterTiltPIDController;
+    private final SparkPIDController lowerShooterPIDController, upperShooterPIDController;
+    private final ThreadedPIDController shooterTiltPIDController;
     private volatile int lowerShooterTargetRPM, upperShooterTargetRPM;
     private volatile double shooterTiltTargetPosition;
 
@@ -64,17 +70,15 @@ public class Shooter implements RobotProperties {
         shooterTiltMotor = new CANSparkMax(SHOOTER_TILT_CAN_ID, MotorType.kBrushless);
 
         // Set if any motors need to be inverted
-        lowerShooterMotor.setInverted(LOWER_SHOOTER_INVERTED);
-        upperShooterMotor.setInverted(UPPER_SHOOTER_INVERTED);
         lowerFeederMotorMaster.setInverted(LOWER_FEEDER_INVERTED);
         upperFeederMotorMaster.setInverted(UPPER_FEEDER_INVERTED);
-        shooterTiltMotor.setInverted(SHOOTER_TILT_INVERTED);
 
-        lowerFeederMotorFollower.follow(lowerFeederMotorMaster, true);
-        upperFeederMotorFollower.follow(upperFeederMotorMaster, true);
+        lowerFeederMotorFollower.follow(lowerFeederMotorMaster);
+        upperFeederMotorFollower.follow(upperFeederMotorMaster);
 
         // Configure the velocity closed loop values
         lowerShooterMotor.restoreFactoryDefaults();
+        lowerShooterMotor.setInverted(LOWER_SHOOTER_INVERTED);
         lowerShooterPIDController = lowerShooterMotor.getPIDController();
         lowerShooterPIDController.setP(SHOOTER_KP);
         lowerShooterPIDController.setI(SHOOTER_KI);
@@ -88,6 +92,7 @@ public class Shooter implements RobotProperties {
         lowerShooterTargetRPM = 0;
 
         upperShooterMotor.restoreFactoryDefaults();
+        upperShooterMotor.setInverted(UPPER_SHOOTER_INVERTED);
         upperShooterPIDController = upperShooterMotor.getPIDController();
         upperShooterPIDController.setP(SHOOTER_KP);
         upperShooterPIDController.setI(SHOOTER_KI);
@@ -101,17 +106,13 @@ public class Shooter implements RobotProperties {
         upperShooterTargetRPM = 0;
 
         shooterTiltMotor.restoreFactoryDefaults();
-        shooterTiltPIDController = shooterTiltMotor.getPIDController();
-        shooterTiltPIDController.setP(TILT_KP);
-        shooterTiltPIDController.setI(TILT_KI);
-        shooterTiltPIDController.setD(TILT_KD);
-        shooterTiltPIDController.setFF(TILT_KF);
-        shooterTiltPIDController.setOutputRange(TILT_MIN, TILT_MAX);
+        shooterTiltMotor.setInverted(SHOOTER_TILT_INVERTED);
         // shooterTiltPidController.setSmartMotionMaxVelocity(2000, 0);
         // shooterTiltPidController.setSmartMotionMinOutputVelocity(0, 0);
         // shooterTiltPidController.setSmartMotionMaxAccel(1500, 0);
         shooterTiltMotor.burnFlash();
-        shooterTiltTargetPosition = 0;
+        shooterTiltPIDController = new ThreadedPIDController(this::getAsDouble, TILT_KP, TILT_KI, TILT_KD, TILT_MIN, TILT_MAX, true);
+        shooterTiltPIDController.start(true);
 
         // Initialize the executor service for concurrency
         executorService = Executors.newFixedThreadPool(2);
@@ -439,16 +440,31 @@ public class Shooter implements RobotProperties {
     }
 
     public void setShooterTiltPosition(final double position) {
-        if (position == 0) {
-            shooterTiltMotor.set(0);
-        } else if (this.shooterTiltTargetPosition != position) {
-            shooterTiltPIDController.setReference(position, ControlType.kPosition);
-        }
-        this.shooterTiltTargetPosition = position;
+        shooterTiltPIDController.enablePID();
+        shooterTiltPIDController.updateSensorLockValueWithoutReset(position);
+        shooterTiltMotor.set(shooterTiltPIDController.getPIDValue());
+    }
+
+    public void setShooterTiltSpeed(final double speed) {
+        shooterTiltPIDController.disablePID();
+        shooterTiltMotor.set(speed);
     }
 
     public double getShooterTilt() {
-        return shooterTiltMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).getPosition();
+        return shooterTiltMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).getPosition() * 360;
+    }
+
+    @Override
+    public double getAsDouble() {
+        return HelperFunctions.Normalize_Gryo_Value(getShooterTilt() - SHOOTER_ENCODER_ZERO_POSITION);
+    }
+
+    public double test() {
+        return shooterTiltPIDController.getSensorValue();
+    }
+
+    public double testLock() {
+        return shooterTiltPIDController.getSensorLockValue();
     }
 
     /**
@@ -461,6 +477,7 @@ public class Shooter implements RobotProperties {
         upperShooterMotor.disable();
         lowerFeederMotorMaster.disable();
         upperFeederMotorMaster.disable();
+        shooterTiltPIDController.disablePID();
         // pickupMotor.set(ControlMode.Disabled, 0);
     }
 
