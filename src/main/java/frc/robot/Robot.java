@@ -7,6 +7,7 @@ package frc.robot;
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
 
 // FRC Imports
@@ -16,7 +17,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import edu.wpi.first.wpilibj.util.Color;
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
 import frc.team3171.sensors.Pigeon2Wrapper;
@@ -126,6 +127,9 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
     SmartDashboard.putData("Auton Modes", autonModeChooser);
 
+    colorMatcher.addColorMatch(ringColor);
+    colorMatcher.setConfidenceThreshold(.9);
+
     // Global Variable Init
     fieldOrientationChosen = false;
 
@@ -156,6 +160,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Colors Sensor Values
     SmartDashboard.putString("Upper Feed Sensor:", String.format("%s | %d", upperFeedSensor.getColor().toString(), upperFeedSensor.getProximity()));
+    SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedSensor.getColor()) != null);
 
     // Driver Controller Info
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
@@ -395,6 +400,8 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   double position = 15;
   boolean pickupEdgeTrigger = false;
+  Color ringColor = new Color(143, 90, 21);
+  ColorMatch colorMatcher = new ColorMatch();
 
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
     // Get the needed joystick values after calculating the deadzones
@@ -411,7 +418,7 @@ public class Robot extends TimedRobot implements RobotProperties {
       shooter.setUpperFeederSpeed(.3);
 
     } else if (operatorControllerState.getBButton()) {
-      if (upperFeedSensor.getColor().toHexString().equals("#8F5A15") || upperFeedSensor.getProximity() > 550) {
+      if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null || upperFeedSensor.getProximity() > 550) {
         shooter.setUpperFeederSpeed(0);
         shooter.setLowerFeederSpeed(0);
       }
