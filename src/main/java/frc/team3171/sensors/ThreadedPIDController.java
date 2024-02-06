@@ -24,7 +24,7 @@ public class ThreadedPIDController {
     /**
      * Objects
      */
-    private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
+    private static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(4);
     private final Supplier<Double> sensor;
     private final ReentrantLock START_LOCK, PID_LOCK;
     private final AtomicBoolean started, disablePID, continuous;
@@ -224,7 +224,11 @@ public class ThreadedPIDController {
      *            The desired sensor lock value.
      */
     public void updateSensorLockValueWithoutReset(final double sensorLockValue) {
-        this.sensorLockValue = Normalize_Gryo_Value(sensorLockValue);
+        if (continuous.get()) {
+            this.sensorLockValue = Normalize_Gryo_Value(sensorLockValue);
+        } else {
+            this.sensorLockValue = sensorLockValue;
+        }
     }
 
     /**
@@ -237,7 +241,11 @@ public class ThreadedPIDController {
     public void updateSensorLockValue(final double sensorLockValue) {
         try {
             PID_LOCK.lock();
-            this.sensorLockValue = Normalize_Gryo_Value(sensorLockValue);
+            if (continuous.get()) {
+                this.sensorLockValue = Normalize_Gryo_Value(sensorLockValue);
+            } else {
+                this.sensorLockValue = sensorLockValue;
+            }
             this.pidValue = 0;
             this.sum = 0;
             this.rate = 0;

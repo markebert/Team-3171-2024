@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
+
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
 import frc.team3171.sensors.Pigeon2Wrapper;
@@ -198,10 +199,10 @@ public class Robot extends TimedRobot implements RobotProperties {
       SmartDashboard.putString("Field Adjusted Angle", String.format("%.2f\u00B0", fieldCorrectedAngle));
 
       // Shooter Values
-      SmartDashboard.putNumber("Lower Shooter RPM:", shooter.getLowerShooterVelocity());
-      SmartDashboard.putNumber("Upper Shooter RPM:", shooter.getUpperShooterVelocity());
-      SmartDashboard.putString("Shooter Tilt Position:", String.format("%.2f", shooter.getShooterTilt()));
-      SmartDashboard.putString("Tilt:", String.format("%.2f|%.2f", shooter.test(), shooter.testLock()));
+      SmartDashboard.putString("Lower Shooter RPM:", String.format("%.2f | %.2f", shooter.getLowerShooterVelocity(), shooter.getLowerShooterTargetVelocity()));
+      SmartDashboard.putString("Upper Shooter RPM:", String.format("%.2f | %.2f", shooter.getUpperShooterVelocity(), shooter.getUpperShooterTargetVelocity()));
+      SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooter.getShooterTiltRaw()));
+      SmartDashboard.putString("Tilt:", String.format("%.2f | %.2f", shooter.test(), shooter.testLock()));
 
       swerveDrive.SmartDashboard();
     }
@@ -398,7 +399,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
   }
 
-  double position = 15;
+  double position = 0;
   boolean pickupEdgeTrigger = false;
   Color ringColor = new Color(143, 90, 21);
   ColorMatch colorMatcher = new ColorMatch();
@@ -413,17 +414,24 @@ public class Robot extends TimedRobot implements RobotProperties {
     // shooter.setLowerFeederSpeed(leftStickY);
 
     if (operatorControllerState.getBButton() && !pickupEdgeTrigger) {
-      shooter.setShooterTiltPosition(15);
+      position = 0;
       shooter.setLowerFeederSpeed(.5);
       shooter.setUpperFeederSpeed(.3);
 
     } else if (operatorControllerState.getBButton()) {
+      position = 0;
       if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null || upperFeedSensor.getProximity() > 550) {
         shooter.setUpperFeederSpeed(0);
         shooter.setLowerFeederSpeed(0);
       }
     } else if (pickupEdgeTrigger) {
       shooter.runUpperFeeder(-.15, .1);
+    } else if (operatorControllerState.getLeftTriggerAxis() > 0) {
+      shooter.setShooterVelocity(LOWER_SHOOTER_SHORT_VELOCITY, UPPER_SHOOTER_SHORT_VELOCITY);
+      // shooter.setShooterVelocity(UPPER_SHOOTER_SHORT_VELOCITY, 0);
+      shooter.setUpperFeederSpeed(rightStickY);
+      if (shooter.isBothShootersAtVelocity(.15)) {
+      }
     } else {
       shooter.setLowerFeederSpeed(0);
       shooter.setUpperFeederSpeed(rightStickY);
@@ -431,20 +439,19 @@ public class Robot extends TimedRobot implements RobotProperties {
       double shooterSpeed = operatorControllerState.getRightTriggerAxis() - operatorControllerState.getLeftTriggerAxis();
       shooter.setShooterSpeed(shooterSpeed, shooterSpeed / 4);
 
-      if (operatorControllerState.getAButton()) {
-        shooter.setShooterTiltPosition(35);
-      } else if (operatorControllerState.getYButton()) {
-        shooter.setShooterTiltPosition(-35);
+    }
+    if (operatorControllerState.getAButton()) {
+      shooter.setShooterTiltPosition(45);
+    } else if (operatorControllerState.getYButton()) {
+      shooter.setShooterTiltPosition(-45);
+    } else {
+      if (leftStickY != 0) {
+        shooter.setShooterTiltSpeed(leftStickY);
+        position = shooter.getShooterTilt();
       } else {
-        if (leftStickY != 0) {
-          shooter.setShooterTiltSpeed(leftStickY);
-          position = shooter.getAsDouble();
-        } else {
-          shooter.setShooterTiltPosition(position);
-        }
+        shooter.setShooterTiltPosition(position);
       }
     }
-
     pickupEdgeTrigger = operatorControllerState.getBButton();
 
   }
