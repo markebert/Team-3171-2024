@@ -3,6 +3,7 @@ package frc.team3171.controllers;
 // Java Imports
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -17,11 +18,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 // REV Imports
 import com.revrobotics.CANSparkFlex;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.SparkAbsoluteEncoder;
 import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkBase.SoftLimitDirection;
 import com.revrobotics.CANSparkLowLevel.MotorType;
-import com.revrobotics.SparkAbsoluteEncoder.Type;
 
 // Team 3171 Imports
 import frc.robot.RobotProperties;
@@ -41,6 +39,8 @@ public class Shooter implements RobotProperties {
 
     // Tilt Encoder
     private final DutyCycleEncoder tiltEncoder;
+    private boolean positionControl;
+    private double tiltPosition, tiltSpeed;
 
     // PID Controllers
     private final ThreadedPIDController lowerShooterPIDController, upperShooterPIDController;
@@ -121,14 +121,35 @@ public class Shooter implements RobotProperties {
         lowerFeederExecutorActive = new AtomicBoolean(false);
         upperFeederExecutorActive = new AtomicBoolean(false);
 
+        // Tilt Executor
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            if (DriverStation.isDisabled()) {
+                shooterTiltPIDController.disablePID();
+                shooterTiltMotor.disable();
+            } else if (positionControl) {
+                shooterTiltPIDController.enablePID();
+                final double currentShooterTilt = getShooterTilt();
+                final double pidValue = shooterTiltPIDController.getPIDValue();
+                final boolean lowerLimit = currentShooterTilt < SHOOTER_ENCODER_MIN_POSITION && pidValue < 0;
+                final boolean upperLimit = currentShooterTilt > SHOOTER_ENCODER_MAX_POSITION && pidValue > 0;
+                if (lowerLimit || upperLimit) {
+                    shooterTiltPIDController.disablePID();
+                    shooterTiltMotor.set(0);
+                } else {
+                    shooterTiltMotor.set(pidValue);
+                }
+            } else {
+                shooterTiltPIDController.disablePID();
+                shooterTiltMotor.set(tiltSpeed);
+            }
+        }, 0, 20, TimeUnit.MILLISECONDS);
+
         try {
             var pidClient = new UDPClient(pidData, PID_LOG_ADDRESS, 5801);
-
             pidClient.start();
         } catch (IOException ex) {
             // Do Nothing
             System.out.println("Could not start any PID logging.");
-            // ex.printStackTrace();
         }
     }
 
@@ -175,9 +196,14 @@ public class Shooter implements RobotProperties {
          */
         lowerShooterPIDController.enablePID();
         upperShooterPIDController.enablePID();
-        lowerShooterPIDController.updateSensorLockValueWithoutReset(lowerShooterTargetRPM);
-        upperShooterPIDController.updateSensorLockValueWithoutReset(upperShooterTargetRPM);
+        lowerShooterPIDController.updateSensorLockValue(lowerShooterTargetRPM);
+        upperShooterPIDController.updateSensorLockValue(upperShooterTargetRPM);
 
+        lowerShooterMotor.set(lowerShooterPIDController.getPIDValue());
+        upperShooterMotor.set(upperShooterPIDController.getPIDValue());
+    }
+
+    public void updatehooterVelocity() {
         lowerShooterMotor.set(lowerShooterPIDController.getPIDValue());
         upperShooterMotor.set(upperShooterPIDController.getPIDValue());
     }
@@ -444,23 +470,18 @@ public class Shooter implements RobotProperties {
     }
 
     public void setShooterTiltPosition(final double position) {
+        positionControl = true;
+        tiltSpeed = 0;
         shooterTiltPIDController.enablePID();
-        shooterTiltPIDController.updateSensorLockValueWithoutReset(position);
-        final double currentShooterTilt = getShooterTilt();
-        final double pidValue = shooterTiltPIDController.getPIDValue();
-        final boolean lowerLimit = currentShooterTilt < SHOOTER_ENCODER_MIN_POSITION && pidValue < 0;
-        final boolean upperLimit = currentShooterTilt > SHOOTER_ENCODER_MAX_POSITION && pidValue > 0;
-        if (lowerLimit || upperLimit) {
-            shooterTiltPIDController.disablePID();
-            shooterTiltMotor.set(0);
-        } else {
-            shooterTiltMotor.set(pidValue);
+        if (shooterTiltPIDController.getSensorLockValue() != position) {
+            shooterTiltPIDController.updateSensorLockValue(position);
         }
     }
 
     public void setShooterTiltSpeed(final double speed) {
+        positionControl = false;
+        tiltSpeed = speed;
         shooterTiltPIDController.disablePID();
-        shooterTiltMotor.set(speed);
     }
 
     public double getShooterTiltRaw() {

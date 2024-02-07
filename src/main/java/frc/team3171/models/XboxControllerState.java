@@ -1,4 +1,4 @@
-package frc.team3171.auton;
+package frc.team3171.models;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.XboxController;

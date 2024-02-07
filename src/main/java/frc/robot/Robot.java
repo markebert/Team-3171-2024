@@ -21,12 +21,13 @@ import edu.wpi.first.wpilibj.util.Color;
 
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
+import frc.team3171.models.ShooterShot;
+import frc.team3171.models.XboxControllerState;
 import frc.team3171.sensors.Pigeon2Wrapper;
 import frc.team3171.sensors.ThreadedPIDController;
 import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
-import frc.team3171.auton.XboxControllerState;
 import frc.team3171.controllers.Shooter;
 
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
@@ -362,21 +363,28 @@ public class Robot extends TimedRobot implements RobotProperties {
     final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
 
     // Calculate the left stick angle and magnitude
-    // Calculate the left stick angle and magnitude
     final double leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
     double leftStickMagnitude;
     leftStickMagnitude = Math.sqrt(Math.pow(leftStickX, 2) + Math.pow(leftStickY, 2));
-    if (leftStickMagnitude > 1.0) {
-      leftStickMagnitude = 1;
-    }
+    leftStickMagnitude = leftStickMagnitude > 1 ? 1 : leftStickMagnitude;
 
     // Calculate the field corrected drive angle
     final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
 
     // Drive Controls
-    final boolean boostMode = driveControllerState.getLeftBumper() || driveControllerState.getRightBumper();
+    final boolean boostMode = driveControllerState.getXButton();
     if (rightStickX != 0) {
       // Manual turning
+      gyroPIDController.disablePID();
+      swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
+    } else if (driveControllerState.getAButton()) {
+      // TODO Target Locking
+
+      gyroPIDController.disablePID();
+      swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
+    } else if (driveControllerState.getBButton()) {
+      // TODO Pickup Locking
+
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
     } else {
@@ -386,60 +394,111 @@ public class Robot extends TimedRobot implements RobotProperties {
       // Quick Turning
       if (driveControllerState.getPOV() != -1) {
         gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(driveControllerState.getPOV()));
-      } else if (driveControllerState.getYButton()) {
-        gyroPIDController.updateSensorLockValueWithoutReset(0);
-      } else if (driveControllerState.getBButton()) {
-        gyroPIDController.updateSensorLockValueWithoutReset(90);
-      } else if (driveControllerState.getAButton()) {
-        gyroPIDController.updateSensorLockValueWithoutReset(180);
-      } else if (driveControllerState.getXButton()) {
-        gyroPIDController.updateSensorLockValueWithoutReset(-90);
       }
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
+    }
+
+    // TODO Arm Controls
+    if (driveControllerState.getLeftBumper()) {
+      // Raise Left Arm
+    } else if (driveControllerState.getLeftTriggerAxis() > .02) {
+      // Lower Left Arm
+    } else {
+      // Disable Left Arm
+    }
+
+    if (driveControllerState.getRightBumper()) {
+      // Raise Right Arm
+    } else if (driveControllerState.getRightTriggerAxis() > .02) {
+      // Lower Right Arm
+    } else {
+      // Disable Right Arm
     }
   }
 
   double position = 0;
   boolean pickupEdgeTrigger = false;
+  boolean shootingEdgeTrigger = false;
   Color ringColor = new Color(143, 90, 21);
   ColorMatch colorMatcher = new ColorMatch();
 
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
     // Get the needed joystick values after calculating the deadzones
     final double leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getLeftX());
-    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY()) / 4;
+    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
     final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightX());
     final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getRightY());
 
-    // shooter.setLowerFeederSpeed(leftStickY);
+    // Get controls
+    final boolean pickupControl = operatorControllerState.getRightTriggerAxis() > .02;
+    final boolean reverseFeed = operatorControllerState.getLeftTriggerAxis() > .02;
+    final boolean shortShot = operatorControllerState.getBButton();
+    final boolean normalShot = operatorControllerState.getAButton();
+    final boolean farShot = operatorControllerState.getXButton();
+    final boolean yeetShot = operatorControllerState.getYButton();
+    final boolean isShooting = shortShot || normalShot || farShot || yeetShot;
 
-    if (operatorControllerState.getBButton() && !pickupEdgeTrigger) {
+    if (pickupControl && !pickupEdgeTrigger) {
+      // Pickup controls start
       position = 0;
+      shooter.setShooterSpeed(0);
       shooter.setLowerFeederSpeed(.5);
       shooter.setUpperFeederSpeed(.3);
-
-    } else if (operatorControllerState.getBButton()) {
+    } else if (pickupControl) {
+      // Pickup controls while held
       position = 0;
       if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null || upperFeedSensor.getProximity() > 550) {
-        shooter.setUpperFeederSpeed(0);
         shooter.setLowerFeederSpeed(0);
+        shooter.setUpperFeederSpeed(0);
       }
     } else if (pickupEdgeTrigger) {
+      // Pickup control when ended
       shooter.runUpperFeeder(-.15, .1);
-    } else if (operatorControllerState.getLeftTriggerAxis() > 0) {
-      shooter.setShooterVelocity(LOWER_SHOOTER_SHORT_VELOCITY, UPPER_SHOOTER_SHORT_VELOCITY);
-      // shooter.setShooterVelocity(UPPER_SHOOTER_SHORT_VELOCITY, 0);
-      shooter.setUpperFeederSpeed(rightStickY);
-      if (shooter.isBothShootersAtVelocity(.15)) {
+    } else if (isShooting && !shootingEdgeTrigger) {
+      // Shooter controls start
+      final ShooterShot shotSpeed;
+      if (shortShot) {
+        // Short shot velocity
+        shotSpeed = SHOOTER_SHOTS.get("SHORT_SHOT");
+      } else if (normalShot) {
+        // Normal shot velocity
+        shotSpeed = SHOOTER_SHOTS.get("NORMAL_SHOT");
+      } else if (farShot) {
+        // Far shot velocity
+        shotSpeed = SHOOTER_SHOTS.get("FAR_SHOT");
+      } else {
+        // If yeet shot or undefined run max rpm
+        shotSpeed = SHOOTER_SHOTS.get("YEET_SHOT") != null ? SHOOTER_SHOTS.get("YEET_SHOT") : new ShooterShot(10000, 10000);
       }
-    } else {
+      shooter.setShooterVelocity(shotSpeed.lowerShooterRPM, shotSpeed.upperShooterRPM);
       shooter.setLowerFeederSpeed(0);
-      shooter.setUpperFeederSpeed(rightStickY);
-
-      double shooterSpeed = operatorControllerState.getRightTriggerAxis() - operatorControllerState.getLeftTriggerAxis();
-      shooter.setShooterSpeed(shooterSpeed, shooterSpeed / 4);
-
+      shooter.setUpperFeederSpeed(0);
+    } else if (reverseFeed) {
+      shooter.setShooterSpeed(REVERSE_SHOOTER_SPEED);
+      shooter.setLowerFeederSpeed(REVERSE_LOWER_FEEDER_SPEED);
+      shooter.setUpperFeederSpeed(REVERSE_UPPER_FEEDER_SPEED);
+    } else if (isShooting) {
+      // Shooter controls while held
+      shooter.updatehooterVelocity();
+      shooter.setLowerFeederSpeed(0);
+      if (shooter.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY)) {
+        shooter.setUpperFeederSpeed(SHOOTER_UPPER_FEED_SPEED);
+      } else {
+        shooter.setUpperFeederSpeed(0);
+      }
+    } else if (shootingEdgeTrigger) {
+      // Shooter controls when ended
+      shooter.setShooterSpeed(0);
+      shooter.setLowerFeederSpeed(0);
+      shooter.setUpperFeederSpeed(0);
+    } else {
+      // Disable feeders and shooters
+      shooter.setShooterSpeed(0);
+      shooter.setLowerFeederSpeed(0);
+      shooter.setUpperFeederSpeed(0);
     }
+
+    // Tilt Controls
     if (operatorControllerState.getAButton()) {
       shooter.setShooterTiltPosition(45);
     } else if (operatorControllerState.getYButton()) {
@@ -452,7 +511,10 @@ public class Robot extends TimedRobot implements RobotProperties {
         shooter.setShooterTiltPosition(position);
       }
     }
-    pickupEdgeTrigger = operatorControllerState.getBButton();
+
+    // Edge Trigger Updates
+    pickupEdgeTrigger = pickupControl;
+    shootingEdgeTrigger = isShooting;
 
   }
 

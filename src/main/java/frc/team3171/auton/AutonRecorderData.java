@@ -2,6 +2,7 @@ package frc.team3171.auton;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.XboxController;
+import frc.team3171.models.XboxControllerState;
 
 /**
  * @author Mark Ebert
