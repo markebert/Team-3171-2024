@@ -7,9 +7,13 @@ package frc.robot;
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.photonvision.PhotonCamera;
+import org.photonvision.PhotonUtils;
+
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
 
+import edu.wpi.first.math.util.Units;
 // FRC Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
@@ -29,7 +33,6 @@ import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.Shooter;
-
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 
 /**
@@ -50,6 +53,12 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Shooter Objects
   private Shooter shooterController;
   private ColorSensorV3 upperFeedColorSensor;
+  private PhotonCamera visionCamera;
+  // Constants such as camera and target height stored. Change per robot and goal!
+  final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(24);
+  final double TARGET_HEIGHT_METERS = Units.feetToMeters(5);
+  // Angle between horizontal and the camera.
+  final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(45);
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -131,6 +140,8 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     colorMatcher.addColorMatch(ringColor);
     colorMatcher.setConfidenceThreshold(.9);
+
+    visionCamera = new PhotonCamera("DEFAULT_AUTON");
 
     // Global Variable Init
     fieldOrientationChosen = false;
@@ -381,9 +392,30 @@ public class Robot extends TimedRobot implements RobotProperties {
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
     } else if (driveControllerState.getAButton()) {
       // TODO Target Locking
-
-      gyroPIDController.disablePID();
-      swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
+      // Vision-alignment mode
+      // Query the latest result from PhotonVision
+      var result = visionCamera.getLatestResult();
+      if (result.hasTargets()) {
+        gyroPIDController.enablePID();
+        var bestTarget = result.getBestTarget();
+        // First calculate range
+        double range = PhotonUtils.calculateDistanceToTargetMeters(
+            CAMERA_HEIGHT_METERS,
+            TARGET_HEIGHT_METERS,
+            CAMERA_PITCH_RADIANS,
+            Units.degreesToRadians(bestTarget.getPitch()));
+        // Use this range as the measurement we give to the PID controller.
+        // -1.0 required to ensure positive PID controller effort _increases_ range
+        // forwardSpeed = -forwardController.calculate(range, GOAL_RANGE_METERS);
+        // Also calculate angular power
+        // -1.0 required to ensure positive PID controller effort _increases_ yaw
+        // rotationSpeed = -turnController.calculate(result.getBestTarget().getYaw(), 0);
+        gyroPIDController.updateSensorLockValueWithoutReset(fieldCorrectedAngle + bestTarget.getYaw());
+      } else {
+        // If we have no targets, stay still.
+        gyroPIDController.disablePID();
+      }
+      swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
     } else if (driveControllerState.getBButton()) {
       // TODO Pickup Locking
 
