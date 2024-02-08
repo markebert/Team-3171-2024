@@ -218,6 +218,22 @@ public class Robot extends TimedRobot implements RobotProperties {
       SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
       SmartDashboard.putString("Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
 
+      int targetID = 0;
+      double range = 0;
+      double yaw = 0;
+      var result = visionCamera.getLatestResult();
+      if (result.hasTargets()) {
+        var bestTarget = result.getBestTarget();
+        targetID = bestTarget.getFiducialId();
+        range = PhotonUtils.calculateDistanceToTargetMeters(
+            CAMERA_HEIGHT_METERS,
+            TARGET_HEIGHT_METERS,
+            CAMERA_PITCH_RADIANS,
+            Units.degreesToRadians(bestTarget.getPitch()));
+        yaw = bestTarget.getYaw();
+      }
+      SmartDashboard.putString("Best Target:", String.format("%d | %.2f | %.2f", targetID, range, yaw));
+
       swerveDrive.SmartDashboard();
     }
 
