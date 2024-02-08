@@ -48,7 +48,7 @@ public class Robot extends TimedRobot implements RobotProperties {
   private ThreadedPIDController gyroPIDController;
 
   // Shooter Objects
-  private Shooter shooter;
+  private Shooter shooterController;
   private ColorSensorV3 upperFeedSensor, lowerFeedSensor;
 
   // Auton Recorder
@@ -83,7 +83,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Shooter Controller Init
     try {
-      shooter = new Shooter();
+      shooterController = new Shooter();
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -200,10 +200,12 @@ public class Robot extends TimedRobot implements RobotProperties {
       SmartDashboard.putString("Field Adjusted Angle", String.format("%.2f\u00B0", fieldCorrectedAngle));
 
       // Shooter Values
-      SmartDashboard.putString("Lower Shooter RPM:", String.format("%.2f | %.2f", shooter.getLowerShooterVelocity(), shooter.getLowerShooterTargetVelocity()));
-      SmartDashboard.putString("Upper Shooter RPM:", String.format("%.2f | %.2f", shooter.getUpperShooterVelocity(), shooter.getUpperShooterTargetVelocity()));
-      SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooter.getShooterTiltRaw()));
-      SmartDashboard.putString("Tilt:", String.format("%.2f | %.2f", shooter.test(), shooter.testLock()));
+      SmartDashboard.putString("Lower Shooter RPM:",
+          String.format("%.2f | %.2f", shooterController.getLowerShooterVelocity(), shooterController.getLowerShooterTargetVelocity()));
+      SmartDashboard.putString("Upper Shooter RPM:",
+          String.format("%.2f | %.2f", shooterController.getUpperShooterVelocity(), shooterController.getUpperShooterTargetVelocity()));
+      SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
+      SmartDashboard.putString("Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
 
       swerveDrive.SmartDashboard();
     }
@@ -418,7 +420,10 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   double position = 0;
   boolean pickupEdgeTrigger = false;
-  boolean shootingEdgeTrigger = false;
+  boolean shooterButtonEdgeTrigger = false;
+  boolean shooterAtSpeedEdgeTrigger = false;
+  boolean isShooterAtSpeed = false;
+  double shooterAtSpeedStartTime = 0;
   Color ringColor = new Color(143, 90, 21);
   ColorMatch colorMatcher = new ColorMatch();
 
@@ -430,91 +435,145 @@ public class Robot extends TimedRobot implements RobotProperties {
     final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getRightY());
 
     // Get controls
-    final boolean pickupControl = operatorControllerState.getRightTriggerAxis() > .02;
-    final boolean reverseFeed = operatorControllerState.getLeftTriggerAxis() > .02;
-    final boolean shortShot = operatorControllerState.getBButton();
-    final boolean normalShot = operatorControllerState.getAButton();
-    final boolean farShot = operatorControllerState.getXButton();
-    final boolean yeetShot = operatorControllerState.getYButton();
-    final boolean isShooting = shortShot || normalShot || farShot || yeetShot;
+    final boolean button_Pickup = operatorControllerState.getRightTriggerAxis() > .02;
+    final boolean button_Reverse_Feed = operatorControllerState.getLeftTriggerAxis() > .02;
+    final boolean button_Short_Shot = operatorControllerState.getBButton();
+    final boolean button_Normal_Shot = operatorControllerState.getAButton();
+    final boolean button_Far_Shot = operatorControllerState.getXButton();
+    final boolean button_Yeet_Shot = operatorControllerState.getYButton();
+    final boolean button_Shooter = button_Short_Shot || button_Normal_Shot || button_Far_Shot || button_Yeet_Shot;
 
-    if (pickupControl && !pickupEdgeTrigger) {
-      // Pickup controls start
-      position = 0;
-      shooter.setShooterSpeed(0);
-      shooter.setLowerFeederSpeed(.5);
-      shooter.setUpperFeederSpeed(.3);
-    } else if (pickupControl) {
-      // Pickup controls while held
-      position = 0;
-      if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null || upperFeedSensor.getProximity() > 550) {
-        shooter.setLowerFeederSpeed(0);
-        shooter.setUpperFeederSpeed(0);
-      }
-    } else if (pickupEdgeTrigger) {
-      // Pickup control when ended
-      shooter.runUpperFeeder(-.15, .1);
-    } else if (isShooting && !shootingEdgeTrigger) {
-      // Shooter controls start
-      final ShooterShot shotSpeed;
-      if (shortShot) {
-        // Short shot velocity
-        shotSpeed = SHOOTER_SHOTS.get("SHORT_SHOT");
-      } else if (normalShot) {
-        // Normal shot velocity
-        shotSpeed = SHOOTER_SHOTS.get("NORMAL_SHOT");
-      } else if (farShot) {
-        // Far shot velocity
-        shotSpeed = SHOOTER_SHOTS.get("FAR_SHOT");
-      } else {
-        // If yeet shot or undefined run max rpm
-        shotSpeed = SHOOTER_SHOTS.get("YEET_SHOT") != null ? SHOOTER_SHOTS.get("YEET_SHOT") : new ShooterShot(10000, 10000);
-      }
-      shooter.setShooterVelocity(shotSpeed.lowerShooterRPM, shotSpeed.upperShooterRPM);
-      shooter.setLowerFeederSpeed(0);
-      shooter.setUpperFeederSpeed(0);
-    } else if (reverseFeed) {
-      shooter.setShooterSpeed(REVERSE_SHOOTER_SPEED);
-      shooter.setLowerFeederSpeed(REVERSE_LOWER_FEEDER_SPEED);
-      shooter.setUpperFeederSpeed(REVERSE_UPPER_FEEDER_SPEED);
-    } else if (isShooting) {
-      // Shooter controls while held
-      shooter.updatehooterVelocity();
-      shooter.setLowerFeederSpeed(0);
-      if (shooter.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY)) {
-        shooter.setUpperFeederSpeed(SHOOTER_UPPER_FEED_SPEED);
-      } else {
-        shooter.setUpperFeederSpeed(0);
-      }
-    } else if (shootingEdgeTrigger) {
-      // Shooter controls when ended
-      shooter.setShooterSpeed(0);
-      shooter.setLowerFeederSpeed(0);
-      shooter.setUpperFeederSpeed(0);
+    // Shooter controls start
+    final ShooterShot selectedShotSpeed;
+    if (button_Short_Shot) {
+      // Short shot velocity
+      selectedShotSpeed = SHOOTER_SHOTS.get("SHORT_SHOT");
+    } else if (button_Normal_Shot) {
+      // Normal shot velocity
+      selectedShotSpeed = SHOOTER_SHOTS.get("NORMAL_SHOT");
+    } else if (button_Far_Shot) {
+      // Far shot velocity
+      selectedShotSpeed = SHOOTER_SHOTS.get("FAR_SHOT");
     } else {
-      // Disable feeders and shooters
-      shooter.setShooterSpeed(0);
-      shooter.setLowerFeederSpeed(0);
-      shooter.setUpperFeederSpeed(0);
+      // If yeet shot or undefined run max rpm
+      selectedShotSpeed = SHOOTER_SHOTS.get("YEET_SHOT") != null ? SHOOTER_SHOTS.get("YEET_SHOT") : new ShooterShot(10000, 10000);
+    }
+
+    if (operatorControllerState.getStartButton()) {
+      position = -45;
+    }
+
+    // Shooter Control
+    if (button_Shooter && !shooterButtonEdgeTrigger) {
+      // Sets the shooter speed and the targeting light
+      shooterAtSpeedEdgeTrigger = false;
+      shooterController.setShooterVelocity(selectedShotSpeed.lowerShooterRPM, selectedShotSpeed.upperShooterRPM);
+    } else if (button_Shooter) {
+      // Check if the shooter is at speed
+      shooterController.updateShooterVelocity();
+      final boolean isAtSpeed = shooterController
+          .isBothShootersAtVelocity(button_Yeet_Shot ? DESIRED_PERCENT_ACCURACY_YEET : DESIRED_PERCENT_ACCURACY);
+      SmartDashboard.putBoolean("Shooter At Speed", isAtSpeed);
+      if (isAtSpeed && !shooterAtSpeedEdgeTrigger) {
+        // Get time that shooter first designated at speed
+        shooterAtSpeedStartTime = Timer.getFPGATimestamp();
+      } else if (isAtSpeed
+          && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime
+              + (button_Short_Shot || button_Yeet_Shot ? DESIRED_AT_SPEED_TIME_SHORT : DESIRED_AT_SPEED_TIME))) {
+        // Feed the ball through the shooter
+        if (button_Yeet_Shot) {
+          shooterController.setUpperFeederSpeed(.4);
+        } else if (button_Short_Shot) {
+          shooterController.setUpperFeederSpeed(.35);
+        } else {
+          shooterController.setUpperFeederSpeed(SHOOTER_UPPER_FEED_SPEED);
+        }
+        shooterController.setLowerFeederSpeed(0);
+      } else if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null) {
+        // Back off the ball from the feed sensor
+        shooterController.setLowerFeederSpeed(0);
+        shooterController.setUpperFeederSpeed(UPPER_FEEDER_BACKFEED_SPEED);
+      } else {
+        // Feeder stopped while shooter gets up tp speeed
+        shooterController.setLowerFeederSpeed(0);
+        shooterController.setUpperFeederSpeed(0);
+      }
+      shooterAtSpeedEdgeTrigger = isAtSpeed;
+    } else {
+      // Stops the shooter
+      shooterAtSpeedEdgeTrigger = false;
+      shooterController.setShooterSpeed(0);
+
+      // Ball Pickup Controls
+      if (button_Pickup && !pickupEdgeTrigger) {
+        // Pickup controls start
+        position = 0;
+        shooterController.setShooterSpeed(0);
+        shooterController.setLowerFeederSpeed(.5);
+        shooterController.setUpperFeederSpeed(.3);
+      } else if (button_Pickup) {
+        // Pickup controls while held
+        position = 0;
+        if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null) {
+          shooterController.setLowerFeederSpeed(0);
+          shooterController.setUpperFeederSpeed(0);
+        }
+      } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedSensor.getColor()) != null)) {
+        // Pickup control when ended
+        shooterController.runUpperFeeder(-.15, .1);
+      } else if (button_Reverse_Feed) {
+        shooterController.setShooterSpeed(-.5);
+        if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null) {
+          shooterController.setUpperFeederSpeed(-.1);
+        } else {
+          shooterController.setUpperFeederSpeed(0);
+        }
+      } else {
+        // Disable feeders and shooters
+        shooterController.setShooterSpeed(0);
+        shooterController.setLowerFeederSpeed(0);
+        shooterController.setUpperFeederSpeed(0);
+      }
+      /*
+       * if (button_Pickup) {
+       * extend_Pickup_Arm = true;
+       * shooterController.setPickupSpeed(PICKUP_SPEED);
+       * if (!feedSensor.get()) {
+       * shooterController.setLowerFeederSpeed(LOWER_FEEDER_SPEED_SLOW);
+       * shooterController.setUpperFeederSpeed(0);
+       * } else {
+       * shooterController.setLowerFeederSpeed(LOWER_FEEDER_SPEED);
+       * shooterController.setUpperFeederSpeed(UPPER_FEEDER_SPEED);
+       * }
+       * } else if (button_Reverse_Pickup) {
+       * shooterController.setShooterSpeed(-.5);
+       * shooterController.setPickupSpeed(REVERSE_PICKUP_SPEED);
+       * shooterController.setLowerFeederSpeed(REVERSE_LOWER_FEEDER_SPEED);
+       * shooterController.setUpperFeederSpeed(REVERSE_UPPER_FEEDER_SPEED);
+       * } else if (ballpickupEdgeTrigger && !feedSensor.get()) {
+       * shooterController.setPickupSpeed(0);
+       * shooterController.runLowerFeeder(LOWER_FEED_END_SPEED, LOWER_FEED_END_TIME);
+       * shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
+       * extend_Pickup_Arm = true;
+       * } else {
+       * shooterController.setPickupSpeed(0);
+       * shooterController.setLowerFeederSpeed(0);
+       * shooterController.setUpperFeederSpeed(0);
+       * }
+       */
     }
 
     // Tilt Controls
-    if (operatorControllerState.getAButton()) {
-      shooter.setShooterTiltPosition(45);
-    } else if (operatorControllerState.getYButton()) {
-      shooter.setShooterTiltPosition(-45);
+    if (leftStickY != 0) {
+      shooterController.setShooterTiltSpeed(leftStickY / 4);
+      position = shooterController.getShooterTilt();
     } else {
-      if (leftStickY != 0) {
-        shooter.setShooterTiltSpeed(leftStickY);
-        position = shooter.getShooterTilt();
-      } else {
-        shooter.setShooterTiltPosition(position);
-      }
+      shooterController.setShooterTiltPosition(position);
     }
 
     // Edge Trigger Updates
-    pickupEdgeTrigger = pickupControl;
-    shootingEdgeTrigger = isShooting;
+    pickupEdgeTrigger = button_Pickup;
+    shooterButtonEdgeTrigger = button_Shooter;
 
   }
 

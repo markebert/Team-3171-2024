@@ -83,7 +83,7 @@ public class Shooter implements RobotProperties {
 
         // Configure the velocity closed loop values
         lowerShooterMotor.restoreFactoryDefaults();
-        lowerShooterMotor.setIdleMode(IdleMode.kCoast);
+        lowerShooterMotor.setIdleMode(IdleMode.kBrake);
         lowerShooterMotor.setInverted(LOWER_SHOOTER_INVERTED);
         lowerShooterMotor.burnFlash();
 
@@ -93,7 +93,7 @@ public class Shooter implements RobotProperties {
         lowerShooterPIDController.start(true);
 
         upperShooterMotor.restoreFactoryDefaults();
-        upperShooterMotor.setIdleMode(IdleMode.kCoast);
+        upperShooterMotor.setIdleMode(IdleMode.kBrake);
         upperShooterMotor.setInverted(UPPER_SHOOTER_INVERTED);
         upperShooterMotor.burnFlash();
 
@@ -203,7 +203,7 @@ public class Shooter implements RobotProperties {
         upperShooterMotor.set(upperShooterPIDController.getPIDValue());
     }
 
-    public void updatehooterVelocity() {
+    public void updateShooterVelocity() {
         lowerShooterMotor.set(lowerShooterPIDController.getPIDValue());
         upperShooterMotor.set(upperShooterPIDController.getPIDValue());
     }
@@ -327,8 +327,8 @@ public class Shooter implements RobotProperties {
         percentError = percentError > 1 ? 1.0 : percentError;
         final double upperError = Math.abs(getUpperShooterTargetVelocity() - getUpperShooterVelocity());
         final double lowerError = Math.abs(getLowerShooterTargetVelocity() - getLowerShooterVelocity());
-        final double upperAcceptableError = upperError * percentError;
-        final double lowerAcceptableError = lowerError * percentError;
+        final double upperAcceptableError = Math.abs(upperShooterPIDController.getSensorLockValue() * percentError);
+        final double lowerAcceptableError = Math.abs(lowerShooterPIDController.getSensorLockValue() * percentError);
         return upperError < upperAcceptableError && lowerError < lowerAcceptableError;
     }
 
