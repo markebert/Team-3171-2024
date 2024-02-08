@@ -55,8 +55,8 @@ public class Robot extends TimedRobot implements RobotProperties {
   private ColorSensorV3 upperFeedColorSensor;
   private PhotonCamera visionCamera;
   // Constants such as camera and target height stored. Change per robot and goal!
-  final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(24);
-  final double TARGET_HEIGHT_METERS = Units.feetToMeters(5);
+  final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);
+  final double TARGET_HEIGHT_METERS = Units.inchesToMeters(56.125);
   // Angle between horizontal and the camera.
   final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(45);
 
@@ -141,7 +141,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     colorMatcher.addColorMatch(ringColor);
     colorMatcher.setConfidenceThreshold(.9);
 
-    visionCamera = new PhotonCamera("DEFAULT_AUTON");
+    visionCamera = new PhotonCamera("photonvision");
 
     // Global Variable Init
     fieldOrientationChosen = false;
