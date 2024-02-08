@@ -470,7 +470,6 @@ public class Robot extends TimedRobot implements RobotProperties {
       shooterController.setShooterVelocity(selectedShotSpeed.lowerShooterRPM, selectedShotSpeed.upperShooterRPM);
     } else if (button_Shooter) {
       // Check if the shooter is at speed
-      shooterController.updateShooterVelocity();
       final boolean isAtSpeed = shooterController
           .isBothShootersAtVelocity(button_Yeet_Shot ? DESIRED_PERCENT_ACCURACY_YEET : DESIRED_PERCENT_ACCURACY);
       SmartDashboard.putBoolean("Shooter At Speed", isAtSpeed);
@@ -502,7 +501,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     } else {
       // Stops the shooter
       shooterAtSpeedEdgeTrigger = false;
-      shooterController.setShooterSpeed(0);
 
       // Ball Pickup Controls
       if (button_Pickup && !pickupEdgeTrigger) {

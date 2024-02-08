@@ -46,7 +46,7 @@ public interface RobotProperties {
                 {
                         // Angle -45
                         put("SHORT_SHOT", new ShooterShot(400, 3150));
-                        put("NORMAL_SHOT", new ShooterShot(750, 1250));
+                        put("NORMAL_SHOT", new ShooterShot(3150, 400));
                         put("FAR_SHOT", new ShooterShot(1000, 2000));
                         put("YEET_SHOT", new ShooterShot(6300, 6300));
                 }

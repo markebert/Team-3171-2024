@@ -40,11 +40,13 @@ public class Shooter implements RobotProperties {
     // Tilt Encoder
     private final DutyCycleEncoder tiltEncoder;
     private boolean positionControl;
-    private double tiltPosition, tiltSpeed;
+    private double tiltSpeed;
 
     // PID Controllers
     private final ThreadedPIDController lowerShooterPIDController, upperShooterPIDController;
     private final ThreadedPIDController shooterTiltPIDController;
+
+    private double lowerShooterSpeed = 0, upperShooterSpeed = 0;
 
     // Executor Service
     private final ExecutorService executorService;
@@ -121,26 +123,43 @@ public class Shooter implements RobotProperties {
         lowerFeederExecutorActive = new AtomicBoolean(false);
         upperFeederExecutorActive = new AtomicBoolean(false);
 
-        // Tilt Executor
+        // Background Executor
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             if (DriverStation.isDisabled()) {
-                shooterTiltPIDController.disablePID();
-                shooterTiltMotor.disable();
-            } else if (positionControl) {
-                shooterTiltPIDController.enablePID();
-                final double currentShooterTilt = getShooterTilt();
-                final double pidValue = shooterTiltPIDController.getPIDValue();
-                final boolean lowerLimit = currentShooterTilt < SHOOTER_ENCODER_MIN_POSITION && pidValue < 0;
-                final boolean upperLimit = currentShooterTilt > SHOOTER_ENCODER_MAX_POSITION && pidValue > 0;
-                if (lowerLimit || upperLimit) {
-                    shooterTiltPIDController.disablePID();
-                    shooterTiltMotor.set(0);
-                } else {
-                    shooterTiltMotor.set(pidValue);
-                }
+                disable();
             } else {
-                shooterTiltPIDController.disablePID();
-                shooterTiltMotor.set(tiltSpeed);
+                // Shooter Tilt Update
+                if (positionControl) {
+                    shooterTiltPIDController.enablePID();
+                    final double currentShooterTilt = getShooterTilt();
+                    final double pidValue = shooterTiltPIDController.getPIDValue();
+                    final boolean lowerLimit = currentShooterTilt < SHOOTER_ENCODER_MIN_POSITION && pidValue < 0;
+                    final boolean upperLimit = currentShooterTilt > SHOOTER_ENCODER_MAX_POSITION && pidValue > 0;
+                    if (lowerLimit || upperLimit) {
+                        shooterTiltPIDController.disablePID();
+                        shooterTiltMotor.set(0);
+                    } else {
+                        shooterTiltMotor.set(pidValue);
+                    }
+                } else {
+                    shooterTiltPIDController.disablePID();
+                    shooterTiltMotor.set(tiltSpeed);
+                }
+
+                // Shooter Motors Update
+                if (lowerShooterPIDController.isDisabled()) {
+                    lowerShooterMotor.set(lowerShooterSpeed);
+                } else {
+                    lowerShooterSpeed = 0;
+                    lowerShooterMotor.set(lowerShooterPIDController.getPIDValue());
+                }
+
+                if (upperShooterPIDController.isDisabled()) {
+                    upperShooterMotor.set(upperShooterSpeed);
+                } else {
+                    upperShooterSpeed = 0;
+                    upperShooterMotor.set(upperShooterPIDController.getPIDValue());
+                }
             }
         }, 0, 20, TimeUnit.MILLISECONDS);
 
@@ -166,8 +185,9 @@ public class Shooter implements RobotProperties {
     public void setShooterSpeed(final double lowerShooterSpeed, final double upperShooterSpeed) {
         lowerShooterPIDController.disablePID();
         upperShooterPIDController.disablePID();
-        lowerShooterMotor.set(lowerShooterSpeed);
-        upperShooterMotor.set(upperShooterSpeed);
+
+        this.lowerShooterSpeed = lowerShooterSpeed;
+        this.upperShooterSpeed = upperShooterSpeed;
     }
 
     /**
@@ -194,18 +214,25 @@ public class Shooter implements RobotProperties {
          * First check if either desired RPM is 0, if so lets the electronic brake
          * handle the slow done rather then the PID Controller.
          */
-        lowerShooterPIDController.enablePID();
-        upperShooterPIDController.enablePID();
-        lowerShooterPIDController.updateSensorLockValue(lowerShooterTargetRPM);
-        upperShooterPIDController.updateSensorLockValue(upperShooterTargetRPM);
+        if (lowerShooterTargetRPM == 0) {
+            lowerShooterPIDController.disablePID();
+            lowerShooterSpeed = 0;
+        } else {
+            lowerShooterPIDController.enablePID();
+            if ((int) lowerShooterPIDController.getSensorLockValue() != lowerShooterTargetRPM) {
+                lowerShooterPIDController.updateSensorLockValue(lowerShooterTargetRPM);
+            }
+        }
 
-        lowerShooterMotor.set(lowerShooterPIDController.getPIDValue());
-        upperShooterMotor.set(upperShooterPIDController.getPIDValue());
-    }
-
-    public void updateShooterVelocity() {
-        lowerShooterMotor.set(lowerShooterPIDController.getPIDValue());
-        upperShooterMotor.set(upperShooterPIDController.getPIDValue());
+        if (upperShooterTargetRPM == 0) {
+            upperShooterPIDController.disablePID();
+            upperShooterSpeed = 0;
+        } else {
+            upperShooterPIDController.enablePID();
+            if ((int) upperShooterPIDController.getSensorLockValue() != upperShooterTargetRPM) {
+                upperShooterPIDController.updateSensorLockValue(upperShooterTargetRPM);
+            }
+        }
     }
 
     /**
@@ -242,7 +269,7 @@ public class Shooter implements RobotProperties {
         percentError = Math.abs(percentError);
         percentError = percentError > 1 ? 1.0 : percentError;
         final double error = Math.abs(lowerShooterPIDController.getSensorLockValue() - getLowerShooterVelocity());
-        final double acceptableError = error * percentError;
+        final double acceptableError = Math.abs(lowerShooterPIDController.getSensorLockValue() * percentError);
         return error < acceptableError;
     }
 
@@ -270,7 +297,7 @@ public class Shooter implements RobotProperties {
         percentError = Math.abs(percentError);
         percentError = percentError > 1 ? 1.0 : percentError;
         final double error = Math.abs(upperShooterPIDController.getSensorLockValue() - getUpperShooterVelocity());
-        final double acceptableError = error * percentError;
+        final double acceptableError = Math.abs(upperShooterPIDController.getSensorLockValue() * percentError);
         return error < acceptableError;
     }
 
@@ -504,14 +531,17 @@ public class Shooter implements RobotProperties {
      * Disables all motors in the {@link Shooter} class.
      */
     public final void disable() {
+        tiltSpeed = 0;
+        lowerShooterSpeed = 0;
+        upperShooterSpeed = 0;
+        shooterTiltPIDController.disablePID();
         lowerShooterPIDController.disablePID();
         upperShooterPIDController.disablePID();
+        shooterTiltMotor.disable();
         lowerShooterMotor.disable();
         upperShooterMotor.disable();
         lowerFeederMotorMaster.disable();
         upperFeederMotorMaster.disable();
-        shooterTiltPIDController.disablePID();
-        // pickupMotor.set(ControlMode.Disabled, 0);
     }
 
 }
