@@ -49,7 +49,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Shooter Objects
   private Shooter shooterController;
-  private ColorSensorV3 upperFeedSensor, lowerFeedSensor;
+  private ColorSensorV3 upperFeedColorSensor;
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -88,7 +88,7 @@ public class Robot extends TimedRobot implements RobotProperties {
       e.printStackTrace();
     }
 
-    upperFeedSensor = new ColorSensorV3(Port.kOnboard);
+    upperFeedColorSensor = new ColorSensorV3(Port.kOnboard);
     // lowerFeedSensor = new ColorSensorV3(Port.kMXP);
 
     // Sensors
@@ -161,8 +161,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     // Colors Sensor Values
-    SmartDashboard.putString("Upper Feed Sensor:", String.format("%s | %d", upperFeedSensor.getColor().toString(), upperFeedSensor.getProximity()));
-    SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedSensor.getColor()) != null);
+    SmartDashboard.putString("Upper Feed Sensor:", String.format("%s | %d", upperFeedColorSensor.getColor().toString(), upperFeedColorSensor.getProximity()));
+    SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
 
     // Driver Controller Info
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
@@ -459,13 +459,14 @@ public class Robot extends TimedRobot implements RobotProperties {
       selectedShotSpeed = SHOOTER_SHOTS.get("YEET_SHOT") != null ? SHOOTER_SHOTS.get("YEET_SHOT") : new ShooterShot(10000, 10000);
     }
 
+    // For testing
     if (operatorControllerState.getStartButton()) {
       position = -45;
     }
 
     // Shooter Control
     if (button_Shooter && !shooterButtonEdgeTrigger) {
-      // Sets the shooter speed and the targeting light
+      // Shooter Start
       shooterAtSpeedEdgeTrigger = false;
       shooterController.setShooterVelocity(selectedShotSpeed.lowerShooterRPM, selectedShotSpeed.upperShooterRPM);
     } else if (button_Shooter) {
@@ -488,7 +489,7 @@ public class Robot extends TimedRobot implements RobotProperties {
           shooterController.setUpperFeederSpeed(SHOOTER_UPPER_FEED_SPEED);
         }
         shooterController.setLowerFeederSpeed(0);
-      } else if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null) {
+      } else if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
         // Back off the ball from the feed sensor
         shooterController.setLowerFeederSpeed(0);
         shooterController.setUpperFeederSpeed(UPPER_FEEDER_BACKFEED_SPEED);
@@ -512,16 +513,16 @@ public class Robot extends TimedRobot implements RobotProperties {
       } else if (button_Pickup) {
         // Pickup controls while held
         position = 0;
-        if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null) {
+        if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
           shooterController.setLowerFeederSpeed(0);
           shooterController.setUpperFeederSpeed(0);
         }
-      } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedSensor.getColor()) != null)) {
+      } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null)) {
         // Pickup control when ended
         shooterController.runUpperFeeder(-.15, .1);
       } else if (button_Reverse_Feed) {
         shooterController.setShooterSpeed(-.5);
-        if (colorMatcher.matchColor(upperFeedSensor.getColor()) != null) {
+        if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
           shooterController.setUpperFeederSpeed(-.1);
         } else {
           shooterController.setUpperFeederSpeed(0);

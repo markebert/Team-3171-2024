@@ -11,6 +11,7 @@ import java.io.IOException;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -41,6 +42,7 @@ public class Shooter implements RobotProperties {
     private final DutyCycleEncoder tiltEncoder;
     private boolean positionControl;
     private double tiltSpeed;
+    private boolean shooterFlipped = false;
 
     // PID Controllers
     private final ThreadedPIDController lowerShooterPIDController, upperShooterPIDController;
@@ -128,10 +130,11 @@ public class Shooter implements RobotProperties {
             if (DriverStation.isDisabled()) {
                 disable();
             } else {
+                final double currentShooterTilt = getShooterTilt();
+
                 // Shooter Tilt Update
                 if (positionControl) {
                     shooterTiltPIDController.enablePID();
-                    final double currentShooterTilt = getShooterTilt();
                     final double pidValue = shooterTiltPIDController.getPIDValue();
                     final boolean lowerLimit = currentShooterTilt < SHOOTER_ENCODER_MIN_POSITION && pidValue < 0;
                     final boolean upperLimit = currentShooterTilt > SHOOTER_ENCODER_MAX_POSITION && pidValue > 0;
@@ -147,6 +150,16 @@ public class Shooter implements RobotProperties {
                 }
 
                 // Shooter Motors Update
+                // Check if the shooter is currently flipped over, if so flip the lower and upper velocities
+                if (currentShooterTilt < 0 || !shooterFlipped) {
+                    shooterFlipped = true;
+                    setShooterVelocity((int) upperShooterPIDController.getSensorLockValue(), (int) lowerShooterPIDController.getSensorLockValue(), true);
+                } else if (currentShooterTilt > 0 && shooterFlipped) {
+                    shooterFlipped = false;
+                    setShooterVelocity((int) lowerShooterPIDController.getSensorLockValue(), (int) upperShooterPIDController.getSensorLockValue(), true);
+                }
+                SmartDashboard.putBoolean("Shooter Flipped:", shooterFlipped);
+
                 if (lowerShooterPIDController.isDisabled()) {
                     lowerShooterMotor.set(lowerShooterSpeed);
                 } else {
@@ -163,7 +176,9 @@ public class Shooter implements RobotProperties {
             }
         }, 0, 20, TimeUnit.MILLISECONDS);
 
-        try {
+        try
+
+        {
             var pidClient = new UDPClient(pidData, PID_LOG_ADDRESS, 5801);
             pidClient.start();
         } catch (IOException ex) {
@@ -209,7 +224,7 @@ public class Shooter implements RobotProperties {
      * @param upperShooterTargetRPM
      *            The RPM to set the upper shooter motor to.
      */
-    public void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM) {
+    public void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM, final boolean withoutReset) {
         /**
          * First check if either desired RPM is 0, if so lets the electronic brake
          * handle the slow done rather then the PID Controller.
@@ -220,7 +235,11 @@ public class Shooter implements RobotProperties {
         } else {
             lowerShooterPIDController.enablePID();
             if ((int) lowerShooterPIDController.getSensorLockValue() != lowerShooterTargetRPM) {
-                lowerShooterPIDController.updateSensorLockValue(lowerShooterTargetRPM);
+                if (withoutReset) {
+                    lowerShooterPIDController.updateSensorLockValueWithoutReset(lowerShooterTargetRPM);
+                } else {
+                    lowerShooterPIDController.updateSensorLockValue(lowerShooterTargetRPM);
+                }
             }
         }
 
@@ -230,9 +249,25 @@ public class Shooter implements RobotProperties {
         } else {
             upperShooterPIDController.enablePID();
             if ((int) upperShooterPIDController.getSensorLockValue() != upperShooterTargetRPM) {
-                upperShooterPIDController.updateSensorLockValue(upperShooterTargetRPM);
+                if (withoutReset) {
+                    upperShooterPIDController.updateSensorLockValueWithoutReset(upperShooterTargetRPM);
+                } else {
+                    upperShooterPIDController.updateSensorLockValue(upperShooterTargetRPM);
+                }
             }
         }
+    }
+
+    /**
+     * Sets the RPM of the shooter motors to the given value.
+     * 
+     * @param lowerShooterTargetRPM
+     *            The RPM to set the lower shooter motor to.
+     * @param upperShooterTargetRPM
+     *            The RPM to set the upper shooter motor to.
+     */
+    public void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM) {
+        setShooterVelocity(lowerShooterTargetRPM, upperShooterTargetRPM, false);
     }
 
     /**
