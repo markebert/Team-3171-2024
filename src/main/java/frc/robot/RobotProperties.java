@@ -45,14 +45,14 @@ public interface RobotProperties {
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
                         // Angle -45
-                        put("SHORT_SHOT", new ShooterShot(400, 3150));
+                        put("SHORT_SHOT", new ShooterShot(2500, 2500));
                         put("NORMAL_SHOT", new ShooterShot(3150, 400));
-                        put("FAR_SHOT", new ShooterShot(1000, 2000));
+                        put("FAR_SHOT", new ShooterShot(4000, 4000));
                         put("YEET_SHOT", new ShooterShot(6300, 6300));
                 }
         };
-        public static final double DESIRED_PERCENT_ACCURACY = .05, DESIRED_PERCENT_ACCURACY_YEET = .05; // Accuracy Settings
-        public static final double DESIRED_AT_SPEED_TIME = .15, DESIRED_AT_SPEED_TIME_SHORT = .25; // Time Settings
+        public static final double DESIRED_PERCENT_ACCURACY = .05; // Accuracy Settings
+        public static final double DESIRED_AT_SPEED_TIME = .2; // Time Settings
 
         public static final float SHOOTER_ENCODER_ZERO_POSITION = 25;
         public static final float SHOOTER_ENCODER_MIN_POSITION = -45;
@@ -74,7 +74,7 @@ public interface RobotProperties {
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
         public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_KF = 0, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
         public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_KF = 0, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
-        public static final double TILT_KP = .006, TILT_KI = .0025, TILT_KD = -.015, TILT_KF = 0, TILT_MIN = -.75, TILT_MAX = .75;
+        public static final double TILT_KP = .007, TILT_KI = .003, TILT_KD = -.01, TILT_KF = 0, TILT_MIN = -.75, TILT_MAX = .75;
 
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";

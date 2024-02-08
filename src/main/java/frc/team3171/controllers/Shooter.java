@@ -151,12 +151,12 @@ public class Shooter implements RobotProperties {
 
                 // Shooter Motors Update
                 // Check if the shooter is currently flipped over, if so flip the lower and upper velocities
-                if (currentShooterTilt < 0 || !shooterFlipped) {
+                if (currentShooterTilt < 0 && !shooterFlipped) {
                     shooterFlipped = true;
                     setShooterVelocity((int) upperShooterPIDController.getSensorLockValue(), (int) lowerShooterPIDController.getSensorLockValue(), true);
-                } else if (currentShooterTilt > 0 && shooterFlipped) {
+                } else if (currentShooterTilt >= 0 && shooterFlipped) {
                     shooterFlipped = false;
-                    setShooterVelocity((int) lowerShooterPIDController.getSensorLockValue(), (int) upperShooterPIDController.getSensorLockValue(), true);
+                    setShooterVelocity((int) upperShooterPIDController.getSensorLockValue(), (int) lowerShooterPIDController.getSensorLockValue(), true);
                 }
                 SmartDashboard.putBoolean("Shooter Flipped:", shooterFlipped);
 
@@ -224,7 +224,7 @@ public class Shooter implements RobotProperties {
      * @param upperShooterTargetRPM
      *            The RPM to set the upper shooter motor to.
      */
-    public void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM, final boolean withoutReset) {
+    private void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM, final boolean withoutReset) {
         /**
          * First check if either desired RPM is 0, if so lets the electronic brake
          * handle the slow done rather then the PID Controller.
@@ -266,7 +266,12 @@ public class Shooter implements RobotProperties {
      * @param upperShooterTargetRPM
      *            The RPM to set the upper shooter motor to.
      */
-    public void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM) {
+    public void setShooterVelocity(int lowerShooterTargetRPM, int upperShooterTargetRPM) {
+        if (shooterFlipped) {
+            int tempRPM = lowerShooterTargetRPM;
+            lowerShooterTargetRPM = upperShooterTargetRPM;
+            upperShooterTargetRPM = tempRPM;
+        }
         setShooterVelocity(lowerShooterTargetRPM, upperShooterTargetRPM, false);
     }
 

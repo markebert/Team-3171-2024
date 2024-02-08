@@ -461,7 +461,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // For testing
     if (operatorControllerState.getStartButton()) {
-      position = -45;
+      position = -60;
     }
 
     // Shooter Control
@@ -471,15 +471,13 @@ public class Robot extends TimedRobot implements RobotProperties {
       shooterController.setShooterVelocity(selectedShotSpeed.lowerShooterRPM, selectedShotSpeed.upperShooterRPM);
     } else if (button_Shooter) {
       // Check if the shooter is at speed
-      final boolean isAtSpeed = shooterController
-          .isBothShootersAtVelocity(button_Yeet_Shot ? DESIRED_PERCENT_ACCURACY_YEET : DESIRED_PERCENT_ACCURACY);
+      final boolean isAtSpeed = shooterController.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY);
       SmartDashboard.putBoolean("Shooter At Speed", isAtSpeed);
       if (isAtSpeed && !shooterAtSpeedEdgeTrigger) {
         // Get time that shooter first designated at speed
         shooterAtSpeedStartTime = Timer.getFPGATimestamp();
       } else if (isAtSpeed
-          && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime
-              + (button_Short_Shot || button_Yeet_Shot ? DESIRED_AT_SPEED_TIME_SHORT : DESIRED_AT_SPEED_TIME))) {
+          && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + DESIRED_AT_SPEED_TIME)) {
         // Feed the ball through the shooter
         if (button_Yeet_Shot) {
           shooterController.setUpperFeederSpeed(.4);
