@@ -185,13 +185,6 @@ public class Robot extends TimedRobot implements RobotProperties {
       }
     }
 
-    // Colors Sensor Values
-    SmartDashboard.putString("Upper Feed Sensor:", String.format("%s | %d", upperFeedColorSensor.getColor().toString(), upperFeedColorSensor.getProximity()));
-    SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
-
-    // Shooter Info
-    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY));
-
     // Driver Controller Info
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
     if (driveController.isConnected()) {
@@ -219,6 +212,20 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Put the values on Shuffleboard
     SmartDashboard.putString("Gyro", String.format("%.2f\u00B0", gyroValue));
+
+    // Colors Sensor Values
+    final int red = upperFeedColorSensor.getBlue(), green = upperFeedColorSensor.getGreen(), blue = upperFeedColorSensor.getBlue();
+    SmartDashboard.putString("Upper Feed Sensor:", String.format("[R: %d, G: %d, B: %d] | Prox: %d", red, green, blue, upperFeedColorSensor.getProximity()));
+    SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
+
+    // Shooter Info
+    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY));
+    SmartDashboard.putString("Lower Shooter RPM:",
+        String.format("%.2f | %.2f", shooterController.getLowerShooterVelocity(), shooterController.getLowerShooterTargetVelocity()));
+    SmartDashboard.putString("Upper Shooter RPM:",
+        String.format("%.2f | %.2f", shooterController.getUpperShooterVelocity(), shooterController.getUpperShooterTargetVelocity()));
+    SmartDashboard.putString("Shooter Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
+
     if (DEBUG) {
       // Operator Controller Values
       SmartDashboard.putString("Left Stick Y", String.format("%.2f", leftStickY));
@@ -228,13 +235,9 @@ public class Robot extends TimedRobot implements RobotProperties {
       SmartDashboard.putString("Field Adjusted Angle", String.format("%.2f\u00B0", fieldCorrectedAngle));
 
       // Shooter Values
-      SmartDashboard.putString("Lower Shooter RPM:",
-          String.format("%.2f | %.2f", shooterController.getLowerShooterVelocity(), shooterController.getLowerShooterTargetVelocity()));
-      SmartDashboard.putString("Upper Shooter RPM:",
-          String.format("%.2f | %.2f", shooterController.getUpperShooterVelocity(), shooterController.getUpperShooterTargetVelocity()));
       SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
-      SmartDashboard.putString("Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
 
+      // Photon Vision Read Outs
       SmartDashboard.putBoolean("Front Targeting Camera:", frontTargetingCamera.isConnected());
       int targetID = 0;
       double range = 0, yaw = 0, pitch = 0;
