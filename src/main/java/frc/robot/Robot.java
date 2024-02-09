@@ -7,13 +7,6 @@ package frc.robot;
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonUtils;
-
-import com.revrobotics.ColorMatch;
-import com.revrobotics.ColorSensorV3;
-
-import edu.wpi.first.math.util.Units;
 // FRC Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
@@ -22,6 +15,15 @@ import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.math.util.Units;
+
+// REV Imports
+import com.revrobotics.ColorMatch;
+import com.revrobotics.ColorSensorV3;
+
+// Photon Vision Imports
+import org.photonvision.PhotonCamera;
+import org.photonvision.PhotonUtils;
 
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
@@ -53,12 +55,9 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Shooter Objects
   private Shooter shooterController;
   private ColorSensorV3 upperFeedColorSensor;
+
+  // Photon Vision Objects
   private PhotonCamera visionCamera;
-  // Constants such as camera and target height stored. Change per robot and goal!
-  final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);
-  final double TARGET_HEIGHT_METERS = Units.inchesToMeters(56.125);
-  // Angle between horizontal and the camera.
-  final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(22.5);
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -80,6 +79,15 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Edge Triggers
   private boolean zeroEdgeTrigger;
+
+  double position = 0;
+  boolean pickupEdgeTrigger = false;
+  boolean shooterButtonEdgeTrigger = false;
+  boolean shooterAtSpeedEdgeTrigger = false;
+  boolean isShooterAtSpeed = false;
+  double shooterAtSpeedStartTime = 0;
+  Color ringColor = new Color(143, 90, 21);
+  ColorMatch colorMatcher = new ColorMatch();
 
   @Override
   public void robotInit() {
@@ -174,6 +182,9 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Colors Sensor Values
     SmartDashboard.putString("Upper Feed Sensor:", String.format("%s | %d", upperFeedColorSensor.getColor().toString(), upperFeedColorSensor.getProximity()));
     SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
+
+    // Shooter Info
+    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY));
 
     // Driver Controller Info
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
@@ -467,23 +478,12 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
   }
 
-  double position = 0;
-  boolean pickupEdgeTrigger = false;
-  boolean shooterButtonEdgeTrigger = false;
-  boolean shooterAtSpeedEdgeTrigger = false;
-  boolean isShooterAtSpeed = false;
-  double shooterAtSpeedStartTime = 0;
-  Color ringColor = new Color(143, 90, 21);
-  ColorMatch colorMatcher = new ColorMatch();
-
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
     // Get the needed joystick values after calculating the deadzones
-    final double leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getLeftX());
     final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
-    final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, operatorControllerState.getRightX());
     final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getRightY());
 
-    // Get controls
+    // Get shooter controls
     final boolean button_Pickup = operatorControllerState.getRightTriggerAxis() > .02;
     final boolean button_Reverse_Feed = operatorControllerState.getLeftTriggerAxis() > .02;
     final boolean button_Short_Shot = operatorControllerState.getBButton();
@@ -493,40 +493,39 @@ public class Robot extends TimedRobot implements RobotProperties {
     final boolean button_Shooter = button_Short_Shot || button_Normal_Shot || button_Far_Shot || button_Yeet_Shot;
 
     // Shooter controls start
-    final ShooterShot selectedShotSpeed;
+    final ShooterShot selectedShot;
     if (button_Short_Shot) {
       // Short shot velocity
-      selectedShotSpeed = SHOOTER_SHOTS.get("SHORT_SHOT");
+      selectedShot = SHOOTER_SHOTS.get("SHORT_SHOT");
     } else if (button_Normal_Shot) {
       // Normal shot velocity
-      selectedShotSpeed = SHOOTER_SHOTS.get("NORMAL_SHOT");
+      selectedShot = SHOOTER_SHOTS.get("NORMAL_SHOT");
     } else if (button_Far_Shot) {
       // Far shot velocity
-      selectedShotSpeed = SHOOTER_SHOTS.get("FAR_SHOT");
+      selectedShot = SHOOTER_SHOTS.get("FAR_SHOT");
+    } else if (button_Yeet_Shot) {
+      // Yeet shot velocity
+      selectedShot = SHOOTER_SHOTS.get("YEET_SHOT");
     } else {
-      // If yeet shot or undefined run max rpm
-      selectedShotSpeed = SHOOTER_SHOTS.get("YEET_SHOT") != null ? SHOOTER_SHOTS.get("YEET_SHOT") : new ShooterShot(10000, 10000);
-    }
-
-    // For testing
-    if (operatorControllerState.getStartButton()) {
-      position = -60;
+      selectedShot = null;
     }
 
     // Shooter Control
     if (button_Shooter && !shooterButtonEdgeTrigger) {
       // Shooter Start
       shooterAtSpeedEdgeTrigger = false;
-      shooterController.setShooterVelocity(selectedShotSpeed.lowerShooterRPM, selectedShotSpeed.upperShooterRPM);
+      if (selectedShot != null) {
+        shooterController.setShooterVelocity(selectedShot.lowerShooterRPM, selectedShot.upperShooterRPM);
+      } else {
+        shooterController.setShooterSpeed(1);
+      }
     } else if (button_Shooter) {
       // Check if the shooter is at speed
-      final boolean isAtSpeed = shooterController.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY);
-      SmartDashboard.putBoolean("Shooter At Speed", isAtSpeed);
+      final boolean isAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY);
       if (isAtSpeed && !shooterAtSpeedEdgeTrigger) {
         // Get time that shooter first designated at speed
         shooterAtSpeedStartTime = Timer.getFPGATimestamp();
-      } else if (isAtSpeed
-          && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + DESIRED_AT_SPEED_TIME)) {
+      } else if (isAtSpeed && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + DESIRED_AT_SPEED_TIME)) {
         // Feed the ball through the shooter
         if (button_Yeet_Shot) {
           shooterController.setUpperFeederSpeed(.4);
@@ -555,8 +554,8 @@ public class Robot extends TimedRobot implements RobotProperties {
         // Pickup controls start
         position = 0;
         shooterController.setShooterSpeed(0);
-        shooterController.setLowerFeederSpeed(.5);
-        shooterController.setUpperFeederSpeed(.3);
+        shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
+        shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
       } else if (button_Pickup) {
         // Pickup controls while held
         position = 0;
