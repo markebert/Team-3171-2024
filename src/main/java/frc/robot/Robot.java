@@ -58,7 +58,7 @@ public class Robot extends TimedRobot implements RobotProperties {
   final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);
   final double TARGET_HEIGHT_METERS = Units.inchesToMeters(56.125);
   // Angle between horizontal and the camera.
-  final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(45);
+  final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(22.5);
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -141,7 +141,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     colorMatcher.addColorMatch(ringColor);
     colorMatcher.setConfidenceThreshold(.9);
 
-    visionCamera = new PhotonCamera("photonvision");
+    visionCamera = new PhotonCamera("Arducam_5MP_Camera_Module");
 
     // Global Variable Init
     fieldOrientationChosen = false;
@@ -426,7 +426,8 @@ public class Robot extends TimedRobot implements RobotProperties {
         // Also calculate angular power
         // -1.0 required to ensure positive PID controller effort _increases_ yaw
         // rotationSpeed = -turnController.calculate(result.getBestTarget().getYaw(), 0);
-        gyroPIDController.updateSensorLockValueWithoutReset(fieldCorrectedAngle + bestTarget.getYaw());
+        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + bestTarget.getYaw()));
+        SmartDashboard.putString("Tracking Angle:", String.format("%.2f", Normalize_Gryo_Value(fieldCorrectedAngle + bestTarget.getYaw())));
       } else {
         // If we have no targets, stay still.
         gyroPIDController.disablePID();
