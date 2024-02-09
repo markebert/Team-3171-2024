@@ -237,8 +237,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
       SmartDashboard.putBoolean("Front Targeting Camera:", frontTargetingCamera.isConnected());
       int targetID = 0;
-      double range = 0;
-      double yaw = 0;
+      double range = 0, yaw = 0, pitch = 0;
       var result = frontTargetingCamera.getLatestResult();
       if (result.hasTargets()) {
         var bestTarget = result.getBestTarget();
@@ -250,7 +249,7 @@ public class Robot extends TimedRobot implements RobotProperties {
             Units.degreesToRadians(bestTarget.getPitch()));
         yaw = bestTarget.getYaw();
       }
-      SmartDashboard.putString("Best Target:", String.format("%d | %.2f | %.2f", targetID, range, yaw));
+      SmartDashboard.putString("Best Target:", String.format("ID: %d | R: %.2f | Y: %.2f | P: %.2f", targetID, range, yaw, pitch));
       SmartDashboard.putString("Tracking Angle:", String.format("%.2f", Normalize_Gryo_Value(gyroValue + yaw)));
 
       swerveDrive.SmartDashboard();
@@ -400,6 +399,17 @@ public class Robot extends TimedRobot implements RobotProperties {
     swerveDrive.driveInit();
     gyroPIDController.enablePID();
     gyroPIDController.updateSensorLockValue();
+
+    // Global Variable reset
+    fieldOrientationChosen = false;
+    shooterAtSpeedStartTime = 0;
+    shooterTiltTargetPosition = 0;
+
+    // Edge Triggers reset
+    zeroEdgeTrigger = false;
+    pickupEdgeTrigger = false;
+    shooterButtonEdgeTrigger = false;
+    shooterAtSpeedEdgeTrigger = false;
   }
 
   private void driveControlsPeriodic(final XboxControllerState driveControllerState) {
