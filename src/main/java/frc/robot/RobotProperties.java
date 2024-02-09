@@ -3,7 +3,10 @@ package frc.robot;
 // Java Imports
 import java.util.HashMap;
 
+// FRC Imports
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.util.Color;
+
 // Team 3171 Imports
 import frc.team3171.drive.SwerveUnitConfig;
 import frc.team3171.drive.SwerveUnitConfig.ENCODER_TYPE;
@@ -64,6 +67,8 @@ public interface RobotProperties {
         public static final double UPPER_FEED_END_SPEED = -.1, UPPER_FEED_END_TIME = .1;
         public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .4;
         public static final double LOWER_FEED_BACKFEED_SPEED = 0, UPPER_FEED_BACKFEED_SPEED = -.075;
+        public static final Color RING_COLOR_ONE = new Color(143, 90, 21);
+        public static final double COLOR_CONFIDENCE = .8;
 
         /** Photon Vision Constants **/
         public final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);

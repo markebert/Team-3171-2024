@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.math.util.Units;
 
 // REV Imports
@@ -57,9 +56,11 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Shooter Objects
   private Shooter shooterController;
   private ColorSensorV3 upperFeedColorSensor;
+  private ColorMatch colorMatcher;
 
   // Photon Vision Objects
-  private PhotonCamera frontTargetingCamera;
+  private PhotonCamera frontTargetingCamera, rearTargetingCamera;
+  private PhotonCamera frontPickupCamera, rearPickupCamera;
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -78,18 +79,14 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Global Variables
   private boolean fieldOrientationChosen;
+  private double shooterAtSpeedStartTime;
+  private double shooterTiltTargetPosition;
 
   // Edge Triggers
   private boolean zeroEdgeTrigger;
-
-  double shooterTiltTargetPosition = 0;
-  boolean pickupEdgeTrigger = false;
-  boolean shooterButtonEdgeTrigger = false;
-  boolean shooterAtSpeedEdgeTrigger = false;
-  boolean isShooterAtSpeed = false;
-  double shooterAtSpeedStartTime = 0;
-  Color ringColor = new Color(143, 90, 21);
-  ColorMatch colorMatcher = new ColorMatch();
+  private boolean pickupEdgeTrigger;
+  private boolean shooterButtonEdgeTrigger;
+  private boolean shooterAtSpeedEdgeTrigger;
 
   @Override
   public void robotInit() {
@@ -107,12 +104,12 @@ public class Robot extends TimedRobot implements RobotProperties {
       e.printStackTrace();
     }
 
-    upperFeedColorSensor = new ColorSensorV3(Port.kOnboard);
-    // lowerFeedSensor = new ColorSensorV3(Port.kMXP);
-
     // Sensors
     gyro = new Pigeon2Wrapper(GYRO_CAN_ID);
     gyro.reset();
+    upperFeedColorSensor = new ColorSensorV3(Port.kOnboard);
+    colorMatcher = new ColorMatch();
+    colorMatcher.addColorMatch(RING_COLOR_ONE);
 
     // PID Controllers
     gyroPIDController = new ThreadedPIDController(gyro.asSupplier(), GYRO_KP, GYRO_KI, GYRO_KD, GYRO_MIN, GYRO_MAX, true);
@@ -148,16 +145,23 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
     SmartDashboard.putData("Auton Modes", autonModeChooser);
 
-    colorMatcher.addColorMatch(ringColor);
-    colorMatcher.setConfidenceThreshold(.9);
+    // Color Matcher init
+    colorMatcher.addColorMatch(RING_COLOR_ONE);
+    colorMatcher.setConfidenceThreshold(COLOR_CONFIDENCE);
 
+    // Photon Vision init
     frontTargetingCamera = new PhotonCamera("Arducam_5MP_Camera_Module");
 
     // Global Variable Init
     fieldOrientationChosen = false;
+    shooterAtSpeedStartTime = 0;
+    shooterTiltTargetPosition = 0;
 
-    // Edge Trigger Init
+    // Edge Triggers Init
     zeroEdgeTrigger = false;
+    pickupEdgeTrigger = false;
+    shooterButtonEdgeTrigger = false;
+    shooterAtSpeedEdgeTrigger = false;
   }
 
   @Override
@@ -519,11 +523,11 @@ public class Robot extends TimedRobot implements RobotProperties {
       }
     } else if (button_Shooter) {
       // Check if the shooter is at speed
-      final boolean isAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY);
-      if (isAtSpeed && !shooterAtSpeedEdgeTrigger) {
+      final boolean isShooterAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY);
+      if (isShooterAtSpeed && !shooterAtSpeedEdgeTrigger) {
         // Get time that shooter first designated at speed
         shooterAtSpeedStartTime = Timer.getFPGATimestamp();
-      } else if (isAtSpeed && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + SHOOTER_DESIRED_AT_SPEED_TIME)) {
+      } else if (isShooterAtSpeed && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + SHOOTER_DESIRED_AT_SPEED_TIME)) {
         // Feed the ball through the shooter
         shooterController.setLowerFeederSpeed(LOWER_FEED_SHOOT_SPEED);
         shooterController.setUpperFeederSpeed(UPPER_FEED_SHOOT_SPEED);
@@ -536,7 +540,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         shooterController.setLowerFeederSpeed(0);
         shooterController.setUpperFeederSpeed(0);
       }
-      shooterAtSpeedEdgeTrigger = isAtSpeed;
+      shooterAtSpeedEdgeTrigger = isShooterAtSpeed;
     } else {
       // Ring Pickup Controls
       if (button_Pickup && !pickupEdgeTrigger) {
