@@ -360,6 +360,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Disable all controllers
     swerveDrive.disable();
     gyroPIDController.disablePID();
+    shooterController.disable();
 
     // Once auton recording is done, save the data to a file, if there is any
     if (saveNewAuton) {
@@ -559,16 +560,18 @@ public class Robot extends TimedRobot implements RobotProperties {
         }
       } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null)) {
         // Pickup control when ended
+        shooterController.setLowerFeederSpeed(0);
         shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
       } else if (button_Reverse_Feed) {
-        shooterController.setShooterSpeed(-.5);
+        shooterController.setShooterSpeed(SHOOTER_REVERSE_FEED_SPEED);
+        shooterController.setLowerFeederSpeed(0);
         if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
-          shooterController.setUpperFeederSpeed(-.1);
+          shooterController.setUpperFeederSpeed(UPPER_FEED_BACKFEED_SPEED);
         } else {
           shooterController.setUpperFeederSpeed(0);
         }
       } else {
-        // Disable feeders and shooters
+        // Disable both feeders and the shooter
         shooterController.setShooterSpeed(0);
         shooterController.setLowerFeederSpeed(0);
         shooterController.setUpperFeederSpeed(0);
