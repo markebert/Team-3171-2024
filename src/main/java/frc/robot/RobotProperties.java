@@ -65,10 +65,6 @@ public interface RobotProperties {
         public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .4;
         public static final double LOWER_FEED_BACKFEED_SPEED = 0, UPPER_FEED_BACKFEED_SPEED = -.075;
 
-        public static final double SHOOTER_LOWER_FEED_SPEED = .1, SHOOTER_UPPER_FEED_SPEED = .25;
-        public static final double REVERSE_LOWER_FEEDER_SPEED = 0, REVERSE_UPPER_FEEDER_SPEED = -.2;
-        public static final double LOWER_FEEDER_SPEED = .3, LOWER_FEEDER_SPEED_SLOW = .2;
-
         /** Photon Vision Constants **/
         public final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);
         public final double TARGET_HEIGHT_METERS = Units.inchesToMeters(56.125);
