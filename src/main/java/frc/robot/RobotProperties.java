@@ -42,13 +42,14 @@ public interface RobotProperties {
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = true, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
-        public static final double DESIRED_PERCENT_ACCURACY = .05; // Accuracy Settings
-        public static final double DESIRED_AT_SPEED_TIME = .2; // Time Window Settings
+        public static final double SHOOTER_TILT_DESIRED_PERCENT_ACCURACY = .1; // Shooter Tilt Accuracy Settings
+        public static final double SHOOTER_DESIRED_PERCENT_ACCURACY = .05; // Shooter Veloctity Accuracy Settings
+        public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .2; // Shooter Veloctity Time Window Settings
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
                         put("SHORT_SHOT", new ShooterShot(60, 2500, 2500));
-                        put("NORMAL_SHOT", new ShooterShot(45, 3150, 400)); // Angle 45 Degrees
+                        put("NORMAL_SHOT", new ShooterShot(45, 3150, 400));
                         put("FAR_SHOT", new ShooterShot(35, 4000, 4000));
                         put("YEET_SHOT", new ShooterShot(60, 6300, 6300));
                 }
@@ -60,14 +61,13 @@ public interface RobotProperties {
         /** Feeder Variables **/
         public static final boolean LOWER_FEEDER_INVERTED = false, UPPER_FEEDER_INVERTED = false;
         public static final double LOWER_FEED_PICKUP_SPEED = .5, UPPER_FEED_PICKUP_SPEED = .25;
-        public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .25;
+        public static final double UPPER_FEED_END_SPEED = -.1, UPPER_FEED_END_TIME = .1;
+        public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .4;
+        public static final double LOWER_FEED_BACKFEED_SPEED = 0, UPPER_FEED_BACKFEED_SPEED = -.075;
 
         public static final double SHOOTER_LOWER_FEED_SPEED = .1, SHOOTER_UPPER_FEED_SPEED = .25;
         public static final double REVERSE_LOWER_FEEDER_SPEED = 0, REVERSE_UPPER_FEEDER_SPEED = -.2;
         public static final double LOWER_FEEDER_SPEED = .3, LOWER_FEEDER_SPEED_SLOW = .2;
-        public static final double UPPER_FEEDER_SPEED = .2, UPPER_FEEDER_BACKFEED_SPEED = -.1;
-        public static final double LOWER_FEED_END_SPEED = .15, LOWER_FEED_END_TIME = .2;
-        public static final double UPPER_FEED_END_SPEED = -.3, UPPER_FEED_END_TIME = .2;
 
         /** Photon Vision Constants **/
         public final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);

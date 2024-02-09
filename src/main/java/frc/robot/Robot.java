@@ -24,6 +24,8 @@ import com.revrobotics.ColorSensorV3;
 // Photon Vision Imports
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonUtils;
+import org.photonvision.targeting.PhotonPipelineResult;
+import org.photonvision.targeting.PhotonTrackedTarget;
 
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
@@ -57,7 +59,7 @@ public class Robot extends TimedRobot implements RobotProperties {
   private ColorSensorV3 upperFeedColorSensor;
 
   // Photon Vision Objects
-  private PhotonCamera visionCamera;
+  private PhotonCamera frontTargetingCamera;
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -80,7 +82,7 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Edge Triggers
   private boolean zeroEdgeTrigger;
 
-  double position = 0;
+  double shooterTiltTargetPosition = 0;
   boolean pickupEdgeTrigger = false;
   boolean shooterButtonEdgeTrigger = false;
   boolean shooterAtSpeedEdgeTrigger = false;
@@ -149,7 +151,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     colorMatcher.addColorMatch(ringColor);
     colorMatcher.setConfidenceThreshold(.9);
 
-    visionCamera = new PhotonCamera("Arducam_5MP_Camera_Module");
+    frontTargetingCamera = new PhotonCamera("Arducam_5MP_Camera_Module");
 
     // Global Variable Init
     fieldOrientationChosen = false;
@@ -184,7 +186,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
 
     // Shooter Info
-    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY));
+    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY));
 
     // Driver Controller Info
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
@@ -229,10 +231,11 @@ public class Robot extends TimedRobot implements RobotProperties {
       SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
       SmartDashboard.putString("Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
 
+      SmartDashboard.putBoolean("Front Targeting Camera:", frontTargetingCamera.isConnected());
       int targetID = 0;
       double range = 0;
       double yaw = 0;
-      var result = visionCamera.getLatestResult();
+      var result = frontTargetingCamera.getLatestResult();
       if (result.hasTargets()) {
         var bestTarget = result.getBestTarget();
         targetID = bestTarget.getFiducialId();
@@ -244,6 +247,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         yaw = bestTarget.getYaw();
       }
       SmartDashboard.putString("Best Target:", String.format("%d | %.2f | %.2f", targetID, range, yaw));
+      SmartDashboard.putString("Tracking Angle:", String.format("%.2f", Normalize_Gryo_Value(gyroValue + yaw)));
 
       swerveDrive.SmartDashboard();
     }
@@ -418,35 +422,28 @@ public class Robot extends TimedRobot implements RobotProperties {
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
     } else if (driveControllerState.getAButton()) {
-      // TODO Target Locking
-      // Vision-alignment mode
-      // Query the latest result from PhotonVision
-      var result = visionCamera.getLatestResult();
-      if (result.hasTargets()) {
-        gyroPIDController.enablePID();
-        var bestTarget = result.getBestTarget();
-        // First calculate range
-        double range = PhotonUtils.calculateDistanceToTargetMeters(
-            CAMERA_HEIGHT_METERS,
-            TARGET_HEIGHT_METERS,
-            CAMERA_PITCH_RADIANS,
-            Units.degreesToRadians(bestTarget.getPitch()));
-        // Use this range as the measurement we give to the PID controller.
-        // -1.0 required to ensure positive PID controller effort _increases_ range
-        // forwardSpeed = -forwardController.calculate(range, GOAL_RANGE_METERS);
-        // Also calculate angular power
-        // -1.0 required to ensure positive PID controller effort _increases_ yaw
-        // rotationSpeed = -turnController.calculate(result.getBestTarget().getYaw(), 0);
-        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + bestTarget.getYaw()));
-        SmartDashboard.putString("Tracking Angle:", String.format("%.2f", Normalize_Gryo_Value(fieldCorrectedAngle + bestTarget.getYaw())));
-      } else {
-        // If we have no targets, stay still.
-        gyroPIDController.disablePID();
+      // April Tag Target Locking
+      gyroPIDController.enablePID();
+
+      // Check if the targeting camera is connected, otherwise normally gyro lock
+      if (frontTargetingCamera.isConnected()) {
+        // Query the latest result from PhotonVision
+        final PhotonPipelineResult result = frontTargetingCamera.getLatestResult();
+        if (result.hasTargets()) {
+          final PhotonTrackedTarget bestTarget = result.getBestTarget();
+          final double targetRange = PhotonUtils.calculateDistanceToTargetMeters(
+              CAMERA_HEIGHT_METERS,
+              TARGET_HEIGHT_METERS,
+              CAMERA_PITCH_RADIANS,
+              Units.degreesToRadians(bestTarget.getPitch()));
+          // Adjust the gyro lock to point torwards the target
+          gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + bestTarget.getYaw()));
+        }
       }
+
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
     } else if (driveControllerState.getBButton()) {
       // TODO Pickup Locking
-
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
     } else {
@@ -481,7 +478,6 @@ public class Robot extends TimedRobot implements RobotProperties {
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
     // Get the needed joystick values after calculating the deadzones
     final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
-    final double rightStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getRightY());
 
     // Get shooter controls
     final boolean button_Pickup = operatorControllerState.getRightTriggerAxis() > .02;
@@ -515,57 +511,55 @@ public class Robot extends TimedRobot implements RobotProperties {
       // Shooter Start
       shooterAtSpeedEdgeTrigger = false;
       if (selectedShot != null) {
+        shooterTiltTargetPosition = selectedShot.getShooterAngle();
         shooterController.setShooterVelocity(selectedShot.lowerShooterRPM, selectedShot.upperShooterRPM);
       } else {
         shooterController.setShooterSpeed(1);
       }
     } else if (button_Shooter) {
       // Check if the shooter is at speed
-      final boolean isAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(DESIRED_PERCENT_ACCURACY);
+      final boolean isAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY);
       if (isAtSpeed && !shooterAtSpeedEdgeTrigger) {
         // Get time that shooter first designated at speed
         shooterAtSpeedStartTime = Timer.getFPGATimestamp();
-      } else if (isAtSpeed && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + DESIRED_AT_SPEED_TIME)) {
+      } else if (isAtSpeed && (Timer.getFPGATimestamp() >= shooterAtSpeedStartTime + SHOOTER_DESIRED_AT_SPEED_TIME)) {
         // Feed the ball through the shooter
-        if (button_Yeet_Shot) {
-          shooterController.setUpperFeederSpeed(.4);
-        } else if (button_Short_Shot) {
-          shooterController.setUpperFeederSpeed(.35);
-        } else {
-          shooterController.setUpperFeederSpeed(SHOOTER_UPPER_FEED_SPEED);
-        }
-        shooterController.setLowerFeederSpeed(0);
+        shooterController.setLowerFeederSpeed(LOWER_FEED_SHOOT_SPEED);
+        shooterController.setUpperFeederSpeed(UPPER_FEED_SHOOT_SPEED);
       } else if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
         // Back off the ball from the feed sensor
-        shooterController.setLowerFeederSpeed(0);
-        shooterController.setUpperFeederSpeed(UPPER_FEEDER_BACKFEED_SPEED);
+        shooterController.setLowerFeederSpeed(LOWER_FEED_BACKFEED_SPEED);
+        shooterController.setUpperFeederSpeed(UPPER_FEED_BACKFEED_SPEED);
       } else {
-        // Feeder stopped while shooter gets up tp speeed
+        // Feeder stopped while shooter gets up to speeed
         shooterController.setLowerFeederSpeed(0);
         shooterController.setUpperFeederSpeed(0);
       }
       shooterAtSpeedEdgeTrigger = isAtSpeed;
     } else {
-      // Stops the shooter
-      shooterAtSpeedEdgeTrigger = false;
-
-      // Ball Pickup Controls
+      // Ring Pickup Controls
       if (button_Pickup && !pickupEdgeTrigger) {
         // Pickup controls start
-        position = 0;
+        shooterTiltTargetPosition = 0;
         shooterController.setShooterSpeed(0);
-        shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
-        shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
       } else if (button_Pickup) {
         // Pickup controls while held
-        position = 0;
-        if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+        shooterTiltTargetPosition = 0;
+        if (HelperFunctions.Within_Percent_Error(shooterController.getShooterTilt(), shooterTiltTargetPosition, SHOOTER_TILT_DESIRED_PERCENT_ACCURACY)) {
+          if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+            shooterController.setLowerFeederSpeed(0);
+            shooterController.setUpperFeederSpeed(0);
+          } else {
+            shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
+            shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
+          }
+        } else {
           shooterController.setLowerFeederSpeed(0);
           shooterController.setUpperFeederSpeed(0);
         }
       } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null)) {
         // Pickup control when ended
-        shooterController.runUpperFeeder(-.15, .1);
+        shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
       } else if (button_Reverse_Feed) {
         shooterController.setShooterSpeed(-.5);
         if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
@@ -579,47 +573,19 @@ public class Robot extends TimedRobot implements RobotProperties {
         shooterController.setLowerFeederSpeed(0);
         shooterController.setUpperFeederSpeed(0);
       }
-      /*
-       * if (button_Pickup) {
-       * extend_Pickup_Arm = true;
-       * shooterController.setPickupSpeed(PICKUP_SPEED);
-       * if (!feedSensor.get()) {
-       * shooterController.setLowerFeederSpeed(LOWER_FEEDER_SPEED_SLOW);
-       * shooterController.setUpperFeederSpeed(0);
-       * } else {
-       * shooterController.setLowerFeederSpeed(LOWER_FEEDER_SPEED);
-       * shooterController.setUpperFeederSpeed(UPPER_FEEDER_SPEED);
-       * }
-       * } else if (button_Reverse_Pickup) {
-       * shooterController.setShooterSpeed(-.5);
-       * shooterController.setPickupSpeed(REVERSE_PICKUP_SPEED);
-       * shooterController.setLowerFeederSpeed(REVERSE_LOWER_FEEDER_SPEED);
-       * shooterController.setUpperFeederSpeed(REVERSE_UPPER_FEEDER_SPEED);
-       * } else if (ballpickupEdgeTrigger && !feedSensor.get()) {
-       * shooterController.setPickupSpeed(0);
-       * shooterController.runLowerFeeder(LOWER_FEED_END_SPEED, LOWER_FEED_END_TIME);
-       * shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
-       * extend_Pickup_Arm = true;
-       * } else {
-       * shooterController.setPickupSpeed(0);
-       * shooterController.setLowerFeederSpeed(0);
-       * shooterController.setUpperFeederSpeed(0);
-       * }
-       */
     }
 
-    // Tilt Controls
+    // Manual Tilt Controls
     if (leftStickY != 0) {
       shooterController.setShooterTiltSpeed(leftStickY / 4);
-      position = shooterController.getShooterTilt();
+      shooterTiltTargetPosition = shooterController.getShooterTilt();
     } else {
-      shooterController.setShooterTiltPosition(position);
+      shooterController.setShooterTiltPosition(shooterTiltTargetPosition);
     }
 
     // Edge Trigger Updates
     pickupEdgeTrigger = button_Pickup;
     shooterButtonEdgeTrigger = button_Shooter;
-
   }
 
 }
