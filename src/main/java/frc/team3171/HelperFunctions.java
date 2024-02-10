@@ -147,19 +147,53 @@ public class HelperFunctions {
 	}
 
 	/**
-	 * Turns a gyros raw values into angles that are more useful (-180.0 degrees to
-	 * 180.0 degrees), where 0 is the front and -180.0 is 180 degrees
-	 * counterclockwise from 0 and 180.0 is 180 degrees clockwise from 0.
+	 * Turns the inputed value into one that is more useful when dealing with non-continuous ranges.
+	 * 
+	 * @param value
+	 *            The value to normalize.
+	 * 
+	 * @param minValue
+	 *            The minimum value of the non-continuous range.
+	 * 
+	 * @param maxValue
+	 *            The maximum value of the non-continuous range.
+	 * 
+	 * @return Returns the given value in a normalized format, using the provided range.
+	 */
+	public static double Normalize_Value(final double value, final double minValue, final double maxValue) {
+		final double maxRange = Math.abs(maxValue - minValue);
+		final double temp = value % maxRange;
+		return (temp < minValue ? temp + maxRange : temp > maxValue ? temp - maxRange : temp);
+	}
+
+	/**
+	 * Turns a gyros raw values into angles that are more useful (-180.0 degrees to 180.0 degrees), where 0 is the front and
+	 * -180.0 is 180 degrees counterclockwise from 0 and 180.0 is 180 degrees clockwise from 0.
 	 * 
 	 * @param gyroValue
 	 *            The gyro value to normalize.
 	 * 
-	 * @return Returns the Gyro's angle in a normalized format, from -180 degrees to
-	 *         180 degrees.
+	 * @return Returns the Gyro's angle in a normalized format, from -180 degrees to 180 degrees.
 	 */
 	public static double Normalize_Gryo_Value(final double gyroValue) {
-		final double gyroAngle = gyroValue % 360;
-		return (gyroAngle < -180 ? gyroAngle + 360 : gyroAngle > 180 ? gyroAngle - 360 : gyroAngle);
+		return Normalize_Value(gyroValue, -180, 180);
+	}
+
+	/**
+	 * Returns the shortest displacement in the best direction from the currentValue to the desiredValue. This function will
+	 * normalize (scale the values from the provided minValue and maxValue) both the currentValue and the desiredValue and
+	 * will return the displacement as a normalized value as well.
+	 * 
+	 * @param currentValue
+	 *            The current value.
+	 * @param desiredValue
+	 *            The desired value.
+	 * @return The shortest displacement representing the best direction to reach the desired value.
+	 */
+	public static double Get_Displacement(final double currentValue, final double desiredValue, final double minValue, final double maxValue) {
+		final double maxRange = Math.abs(maxValue - minValue);
+		final double displacement = Normalize_Value(desiredValue, minValue, maxValue) - Normalize_Value(currentValue, minValue, maxValue);
+		return (displacement < minValue ? displacement + maxRange : displacement > maxValue ? displacement - maxRange : displacement);
 	}
 
 	/**
