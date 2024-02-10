@@ -190,8 +190,10 @@ public class HelperFunctions {
 	 *            The desired value.
 	 * @return The shortest displacement representing the best direction to reach the desired value.
 	 */
-	public static double Get_Displacement(final double currentValue, final double desiredValue, final double minValue, final double maxValue) {
+	public static double Get_Displacement(final double currentValue, final double desiredValue, double minValue, double maxValue) {
 		final double maxRange = Math.abs(maxValue - minValue);
+		minValue = -maxRange / 2;
+		maxValue = maxRange / 2;
 		final double displacement = Normalize_Value(desiredValue, minValue, maxValue) - Normalize_Value(currentValue, minValue, maxValue);
 		return (displacement < minValue ? displacement + maxRange : displacement > maxValue ? displacement - maxRange : displacement);
 	}
