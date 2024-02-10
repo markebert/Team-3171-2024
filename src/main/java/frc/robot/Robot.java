@@ -36,7 +36,6 @@ import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
-
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 
 /**
