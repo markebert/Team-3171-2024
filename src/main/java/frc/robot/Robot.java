@@ -30,12 +30,13 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 import frc.team3171.drive.SwerveDrive;
 import frc.team3171.models.ShooterShot;
 import frc.team3171.models.XboxControllerState;
+import frc.team3171.operator.Shooter;
 import frc.team3171.sensors.Pigeon2Wrapper;
-import frc.team3171.sensors.ThreadedPIDController;
 import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
-import frc.team3171.controllers.Shooter;
+import frc.team3171.controllers.ThreadedPIDController;
+
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 
 /**

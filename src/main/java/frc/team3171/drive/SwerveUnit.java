@@ -24,9 +24,10 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 // Team 3171 Imports
 import frc.robot.RobotProperties;
 import frc.team3171.HelperFunctions;
+import frc.team3171.controllers.ThreadedPIDController;
 import frc.team3171.drive.SwerveUnitConfig.ENCODER_TYPE;
 import frc.team3171.drive.SwerveUnitConfig.MOTOR_TYPE;
-import frc.team3171.sensors.ThreadedPIDController;
+
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 
 /**

@@ -1,4 +1,4 @@
-package frc.team3171.controllers;
+package frc.team3171.operator;
 
 // Java Imports
 import java.util.concurrent.ExecutorService;
@@ -25,8 +25,8 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 // Team 3171 Imports
 import frc.robot.RobotProperties;
 import frc.team3171.HelperFunctions;
-import frc.team3171.sensors.ThreadedPIDController;
-import frc.team3171.sensors.UDPClient;
+import frc.team3171.controllers.ThreadedPIDController;
+import frc.team3171.networking.UDPClient;
 
 /**
  * @author Mark Ebert

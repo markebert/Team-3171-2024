@@ -1,4 +1,4 @@
-package frc.team3171.sensors;
+package frc.team3171.controllers;
 
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
