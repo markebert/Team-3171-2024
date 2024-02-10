@@ -9,6 +9,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+// FRC Imports
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.Timer;
 
 /**
@@ -58,7 +60,7 @@ public class AutonRecorder {
      */
     public void saveToFile(String autonFileName) {
         try {
-            File autonFile = new File(String.format("/home/lvuser/%s.txt", autonFileName));
+            File autonFile = new File(String.format("%s/%s.txt", Filesystem.getDeployDirectory(), autonFileName));
             if (autonFile.exists()) {
                 autonFile.delete();
             }
@@ -76,10 +78,6 @@ public class AutonRecorder {
                 autonData = autonQueue.poll();
                 Timer.delay(.001);
             }
-            // Write an auton end
-            // AutonRecorderData endData = new AutonRecorderData();
-            // endData.setFPGATimestamp(autonData.getFPGATimestamp() + .1);
-            // writer.write(endData.toString());
             // Flush the data to the file
             writer.flush();
             writer.close();
@@ -98,7 +96,7 @@ public class AutonRecorder {
     public static void loadFromFile(ConcurrentLinkedQueue<AutonRecorderData> autonPlaybackQueue, String autonFileName) {
         autonPlaybackQueue.clear();
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(String.format("/home/lvuser/%s.txt", autonFileName)));
+            BufferedReader reader = new BufferedReader(new FileReader(String.format("%s/%s.txt", Filesystem.getDeployDirectory(), autonFileName)));
             String line = reader.readLine();
             while (line != null) {
                 autonPlaybackQueue.add(AutonRecorderData.fromString(line));

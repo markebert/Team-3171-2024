@@ -109,7 +109,9 @@ public class SwerveUnit implements DoubleSupplier, RobotProperties {
         slewPIDData = swerveUnitConfig.isLogPIDData() ? new ConcurrentLinkedQueue<String>() : null;
 
         // Init the gyro PID controller
-        slewPIDController = new ThreadedPIDController(this::getAsDouble, SLEW_KP, SLEW_KI, SLEW_KD, SLEW_PID_MIN, SLEW_PID_MAX, true);
+        slewPIDController = new ThreadedPIDController(this::getAsDouble, SLEW_KP, SLEW_KI, SLEW_KD, SLEW_PID_MIN, SLEW_PID_MAX, false);
+        slewPIDController.setMinValue(-180);
+        slewPIDController.setMaxValue(180);
         // slewPIDController.start(20, true, slewPIDData);
         slewPIDController.start(20, true, slewPIDData);
 

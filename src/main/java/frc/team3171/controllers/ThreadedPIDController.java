@@ -13,8 +13,8 @@ import java.util.function.Supplier;
 import edu.wpi.first.wpilibj.Timer;
 
 // Team 3171 Imports
-import static frc.team3171.HelperFunctions.Get_Gyro_Displacement;
-import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
+import static frc.team3171.HelperFunctions.Get_Displacement;
+import static frc.team3171.HelperFunctions.Normalize_Value;
 
 /**
  * @author Mark Ebert
@@ -32,7 +32,7 @@ public class ThreadedPIDController {
     /**
      * Variables
      */
-    private volatile double pidValue, sensorValue, sensorLockValue;
+    private volatile double pidValue, sensorValue, sensorLockValue, minValue, maxValue;
     private double sum = 0, rate = 0;
     private double proportionalTemp, sumTemp, rateTemp;
     private double currentTime = 0, lastTime = 0;
@@ -93,6 +93,8 @@ public class ThreadedPIDController {
         this.pidValue = 0;
         this.sensorValue = 0;
         this.sensorLockValue = 0;
+        this.minValue = 0;
+        this.maxValue = 0;
         this.kP = kP;
         this.kI = kI;
         this.kD = kD;
@@ -133,9 +135,9 @@ public class ThreadedPIDController {
                         try {
                             PID_LOCK.lock();
                             if (continuous.get()) {
-                                pidValue = calculatePID(Get_Gyro_Displacement(sensorValue, sensorLockValue));
-                            } else {
                                 pidValue = calculatePID(sensorLockValue - sensorValue);
+                            } else {
+                                pidValue = calculatePID(Get_Displacement(sensorValue, sensorLockValue, minValue, maxValue));
                             }
                         } finally {
                             PID_LOCK.unlock();
@@ -225,9 +227,9 @@ public class ThreadedPIDController {
      */
     public void updateSensorLockValueWithoutReset(final double sensorLockValue) {
         if (continuous.get()) {
-            this.sensorLockValue = Normalize_Gryo_Value(sensorLockValue);
-        } else {
             this.sensorLockValue = sensorLockValue;
+        } else {
+            this.sensorLockValue = Normalize_Value(sensorLockValue, minValue, maxValue);
         }
     }
 
@@ -242,9 +244,9 @@ public class ThreadedPIDController {
         try {
             PID_LOCK.lock();
             if (continuous.get()) {
-                this.sensorLockValue = Normalize_Gryo_Value(sensorLockValue);
-            } else {
                 this.sensorLockValue = sensorLockValue;
+            } else {
+                this.sensorLockValue = Normalize_Value(sensorLockValue, minValue, maxValue);
             }
             this.pidValue = 0;
             this.sum = 0;
@@ -383,6 +385,32 @@ public class ThreadedPIDController {
         try {
             PID_LOCK.lock();
             this.kD = kD;
+        } finally {
+            PID_LOCK.unlock();
+        }
+    }
+
+    /**
+     * @param minValue
+     *            the minValue to set
+     */
+    public void setMinValue(double minValue) {
+        try {
+            PID_LOCK.lock();
+            this.minValue = minValue;
+        } finally {
+            PID_LOCK.unlock();
+        }
+    }
+
+    /**
+     * @param maxValue
+     *            the maxValue to set
+     */
+    public void setMaxValue(double maxValue) {
+        try {
+            PID_LOCK.lock();
+            this.maxValue = maxValue;
         } finally {
             PID_LOCK.unlock();
         }

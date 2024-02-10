@@ -16,6 +16,9 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.util.Units;
 
+// CTRE Imports
+import com.ctre.phoenix6.hardware.Pigeon2;
+
 // REV Imports
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
@@ -31,7 +34,6 @@ import frc.team3171.drive.SwerveDrive;
 import frc.team3171.models.ShooterShot;
 import frc.team3171.models.XboxControllerState;
 import frc.team3171.operator.Shooter;
-import frc.team3171.sensors.Pigeon2Wrapper;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
@@ -51,7 +53,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Drive Objects
   private SwerveDrive swerveDrive;
-  private Pigeon2Wrapper gyro;
+  private Pigeon2 gyro;
   private ThreadedPIDController gyroPIDController;
 
   // Shooter Objects
@@ -106,14 +108,16 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     // Sensors
-    gyro = new Pigeon2Wrapper(GYRO_CAN_ID);
+    gyro = new Pigeon2(GYRO_CAN_ID);
     gyro.reset();
     upperFeedColorSensor = new ColorSensorV3(Port.kOnboard);
     colorMatcher = new ColorMatch();
     colorMatcher.addColorMatch(RING_COLOR_ONE);
 
     // PID Controllers
-    gyroPIDController = new ThreadedPIDController(gyro.asSupplier(), GYRO_KP, GYRO_KI, GYRO_KD, GYRO_MIN, GYRO_MAX, true);
+    gyroPIDController = new ThreadedPIDController(() -> Normalize_Gryo_Value(gyro.getAngle()), GYRO_KP, GYRO_KI, GYRO_KD, GYRO_MIN, GYRO_MAX, false);
+    gyroPIDController.setMinValue(-180);
+    gyroPIDController.setMaxValue(180);
     gyroPIDController.start();
 
     // Auton Recorder init

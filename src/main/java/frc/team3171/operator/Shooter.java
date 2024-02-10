@@ -92,7 +92,7 @@ public class Shooter implements RobotProperties {
         lowerShooterMotor.burnFlash();
 
         lowerShooterPIDController = new ThreadedPIDController(this::getLowerShooterVelocity, SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_MIN, SHOOTER_MAX,
-                false);
+                true);
         // lowerShooterPIDController.start(20, true, lowerData);
         lowerShooterPIDController.start(true);
 
@@ -102,7 +102,7 @@ public class Shooter implements RobotProperties {
         upperShooterMotor.burnFlash();
 
         upperShooterPIDController = new ThreadedPIDController(this::getUpperShooterVelocity, SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_MIN, SHOOTER_MAX,
-                false);
+                true);
         // upperShooterPIDController.start(20, true, upperData);
         upperShooterPIDController.start(true);
 
@@ -113,7 +113,9 @@ public class Shooter implements RobotProperties {
 
         tiltEncoder = new DutyCycleEncoder(0);
 
-        shooterTiltPIDController = new ThreadedPIDController(this::getShooterTilt, TILT_KP, TILT_KI, TILT_KD, TILT_MIN, TILT_MAX, true);
+        shooterTiltPIDController = new ThreadedPIDController(this::getShooterTilt, TILT_KP, TILT_KI, TILT_KD, TILT_MIN, TILT_MAX, false);
+        shooterTiltPIDController.setMinValue(-180);
+        shooterTiltPIDController.setMaxValue(180);
         shooterTiltPIDController.start(20, true, pidData);
         // shooterTiltPIDController.start(true);
 
