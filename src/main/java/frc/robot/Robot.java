@@ -32,11 +32,12 @@ import frc.team3171.models.ShooterShot;
 import frc.team3171.models.XboxControllerState;
 import frc.team3171.operator.Shooter;
 import frc.team3171.sensors.Pigeon2Wrapper;
-import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
+import static frc.team3171.HelperFunctions.Deadzone_With_Map;
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
+import static frc.team3171.HelperFunctions.Within_Percent_Error;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to each mode, as
@@ -189,9 +190,9 @@ public class Robot extends TimedRobot implements RobotProperties {
     double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
     if (driveController.isConnected()) {
       // Get the controller values
-      leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, driveController.getLeftX());
-      leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -driveController.getLeftY());
-      rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, driveController.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
+      leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveController.getLeftX());
+      leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveController.getLeftY());
+      rightStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveController.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
 
       // Calculate the left stick angle and magnitude
       leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
@@ -420,9 +421,9 @@ public class Robot extends TimedRobot implements RobotProperties {
     final double gyroValue = Normalize_Gryo_Value(gyro.getAngle());
 
     // Get the needed joystick values after calculating the deadzones
-    final double leftStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
-    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
-    final double rightStickX = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
+    final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
+    final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
+    final double rightStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
 
     // Calculate the left stick angle and magnitude
     final double leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
@@ -495,7 +496,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
     // Get the needed joystick values after calculating the deadzones
-    final double leftStickY = HelperFunctions.Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
+    final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
 
     // Get shooter controls
     final boolean button_Pickup = operatorControllerState.getRightTriggerAxis() > .02;
@@ -563,7 +564,7 @@ public class Robot extends TimedRobot implements RobotProperties {
       } else if (button_Pickup) {
         // Pickup controls while held
         shooterTiltTargetPosition = 0;
-        if (HelperFunctions.Within_Percent_Error(shooterController.getShooterTilt(), shooterTiltTargetPosition, SHOOTER_TILT_DESIRED_PERCENT_ACCURACY)) {
+        if (Within_Percent_Error(shooterController.getShooterTilt(), shooterTiltTargetPosition, SHOOTER_TILT_DESIRED_PERCENT_ACCURACY)) {
           if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
             shooterController.setLowerFeederSpeed(0);
             shooterController.setUpperFeederSpeed(0);
