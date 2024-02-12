@@ -12,6 +12,7 @@ import frc.team3171.drive.SwerveUnitConfig;
 import frc.team3171.drive.SwerveUnitConfig.ENCODER_TYPE;
 import frc.team3171.drive.SwerveUnitConfig.MOTOR_TYPE;
 import frc.team3171.drive.SwerveUnitConfig.SwerveUnitConfigBuilder;
+import frc.team3171.models.PhotonCameraConfig;
 import frc.team3171.models.ShooterShot;
 
 /**
@@ -71,9 +72,24 @@ public interface RobotProperties {
         public static final double COLOR_CONFIDENCE = .8;
 
         /** Photon Vision Constants **/
-        public final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(14);
-        public final double TARGET_HEIGHT_METERS = Units.inchesToMeters(56.125);
-        public final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(22.5); // Angle between horizontal and the camera.
+        public static final HashMap<String, PhotonCameraConfig> PHOTON_CAMERAS_CONFIGS = new HashMap<>() {
+                {
+                        put("FRONT_TARGETING_CAMERA", new PhotonCameraConfig("FRONT_TARGETING_CAMERA", Units.inchesToMeters(14), Units.degreesToRadians(22.5)));
+                        put("REAR_TARGETING_CAMERA", new PhotonCameraConfig("REAR_TARGETING_CAMERA", Units.inchesToMeters(14), Units.degreesToRadians(22.5)));
+                        put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(0), Units.degreesToRadians(0)));
+                        put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(0), Units.degreesToRadians(0)));
+                }
+        };
+        public static final HashMap<Integer, Double> APRILTAG_HEIGHTS_METERS = new HashMap<>() {
+                {
+                        put(1, Units.inchesToMeters(56.125));
+                        put(2, Units.inchesToMeters(56.125));
+                        put(3, Units.inchesToMeters(56.125));
+                        put(4, Units.inchesToMeters(56.125));
+                        put(5, Units.inchesToMeters(56.125));
+                        put(6, Units.inchesToMeters(56.125));
+                }
+        };
 
         /** PID Variables **/
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;

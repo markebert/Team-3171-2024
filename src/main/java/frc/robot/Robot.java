@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.math.util.Units;
 
 // CTRE Imports
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -37,6 +36,8 @@ import frc.team3171.operator.Shooter;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
+import frc.team3171.controllers.VisionController;
+
 import static frc.team3171.HelperFunctions.Deadzone_With_Map;
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 import static frc.team3171.HelperFunctions.Within_Percent_Error;
@@ -61,10 +62,6 @@ public class Robot extends TimedRobot implements RobotProperties {
   private ColorSensorV3 upperFeedColorSensor;
   private ColorMatch colorMatcher;
 
-  // Photon Vision Objects
-  private PhotonCamera frontTargetingCamera, rearTargetingCamera;
-  private PhotonCamera frontPickupCamera, rearPickupCamera;
-
   // Auton Recorder
   private AutonRecorder autonRecorder;
   private ConcurrentLinkedQueue<AutonRecorderData> autonPlaybackQueue;
@@ -79,6 +76,9 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Shuffleboard Choosers
   private SendableChooser<Boolean> autonTypeChooser, fieldOrientationChooser;
   private SendableChooser<String> autonModeChooser;
+
+  // Vision Controller
+  private VisionController visionController;
 
   // Global Variables
   private boolean fieldOrientationChosen;
@@ -154,8 +154,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     colorMatcher.addColorMatch(RING_COLOR_ONE);
     colorMatcher.setConfidenceThreshold(COLOR_CONFIDENCE);
 
-    // Photon Vision init
-    frontTargetingCamera = new PhotonCamera("Arducam_5MP_Camera_Module");
+    // Vision Controller Init
+    visionController = new VisionController();
 
     // Global Variable Init
     fieldOrientationChosen = false;
@@ -242,23 +242,10 @@ public class Robot extends TimedRobot implements RobotProperties {
       // Shooter Values
       SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
 
-      // Photon Vision Read Outs
-      SmartDashboard.putBoolean("Front Targeting Camera:", frontTargetingCamera.isConnected());
-      int targetID = 0;
-      double range = 0, yaw = 0, pitch = 0;
-      var result = frontTargetingCamera.getLatestResult();
-      if (result.hasTargets()) {
-        var bestTarget = result.getBestTarget();
-        targetID = bestTarget.getFiducialId();
-        range = PhotonUtils.calculateDistanceToTargetMeters(
-            CAMERA_HEIGHT_METERS,
-            TARGET_HEIGHT_METERS,
-            CAMERA_PITCH_RADIANS,
-            Units.degreesToRadians(bestTarget.getPitch()));
-        yaw = bestTarget.getYaw();
-      }
-      SmartDashboard.putString("Best Target:", String.format("ID: %d | R: %.2f | Y: %.2f | P: %.2f", targetID, range, yaw, pitch));
-      SmartDashboard.putString("Tracking Angle:", String.format("%.2f", Normalize_Gryo_Value(gyroValue + yaw)));
+      visionController.smartdashboard(PHOTON_CAMERAS_CONFIGS.get("FRONT_TARGETING_CAMERA").getCAMERA_NAME());
+      PhotonTrackedTarget frontTargetingCameraBestTarget = visionController.getCameraBestTarget("FRONT_TARGETING_CAMERA");
+      SmartDashboard.putString("Front Targeting Camera Tracking Angle:",
+          String.format("%.2f", Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw())));
 
       swerveDrive.SmartDashboard();
     }
@@ -448,20 +435,10 @@ public class Robot extends TimedRobot implements RobotProperties {
       // April Tag Target Locking
       gyroPIDController.enablePID();
 
-      // Check if the targeting camera is connected, otherwise normally gyro lock
-      if (frontTargetingCamera.isConnected()) {
-        // Query the latest result from PhotonVision
-        final PhotonPipelineResult result = frontTargetingCamera.getLatestResult();
-        if (result.hasTargets()) {
-          final PhotonTrackedTarget bestTarget = result.getBestTarget();
-          final double targetRange = PhotonUtils.calculateDistanceToTargetMeters(
-              CAMERA_HEIGHT_METERS,
-              TARGET_HEIGHT_METERS,
-              CAMERA_PITCH_RADIANS,
-              Units.degreesToRadians(bestTarget.getPitch()));
-          // Adjust the gyro lock to point torwards the target
-          gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + bestTarget.getYaw()));
-        }
+      final PhotonTrackedTarget frontTargetingCameraBestTarget = visionController.getCameraBestTarget("FRONT_TARGETING_CAMERA");
+      if (frontTargetingCameraBestTarget != null) {
+        // Adjust the gyro lock to point torwards the target
+        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw()));
       }
 
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
