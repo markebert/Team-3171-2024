@@ -138,8 +138,8 @@ public class Shooter implements RobotProperties {
                 if (positionControl) {
                     shooterTiltPIDController.enablePID();
                     final double pidValue = shooterTiltPIDController.getPIDValue();
-                    final boolean lowerLimit = currentShooterTilt < SHOOTER_ENCODER_MIN_POSITION && pidValue < 0;
-                    final boolean upperLimit = currentShooterTilt > SHOOTER_ENCODER_MAX_POSITION && pidValue > 0;
+                    final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && pidValue < 0;
+                    final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && pidValue > 0;
                     if (lowerLimit || upperLimit) {
                         shooterTiltPIDController.disablePID();
                         shooterTiltMotor.set(0);
@@ -558,7 +558,7 @@ public class Shooter implements RobotProperties {
     }
 
     public double getShooterTilt() {
-        return HelperFunctions.Normalize_Gryo_Value(getShooterTiltRaw() - SHOOTER_ENCODER_ZERO_POSITION);
+        return HelperFunctions.Normalize_Gryo_Value(getShooterTiltRaw() - SHOOTER_TILT_ZERO_POSITION);
     }
 
     public double test() {

@@ -59,8 +59,8 @@ public interface RobotProperties {
                 }
         };
 
-        public static final double SHOOTER_ENCODER_ZERO_POSITION = 25;
-        public static final double SHOOTER_ENCODER_MIN_POSITION = -75, SHOOTER_ENCODER_MAX_POSITION = 75;
+        public static final double SHOOTER_TILT_ZERO_POSITION = 25;
+        public static final double SHOOTER_TILT_MIN_POSITION = -75, SHOOTER_TILT_MAX_POSITION = 75;
 
         /** Feeder Variables **/
         public static final boolean LOWER_FEEDER_INVERTED = false, UPPER_FEEDER_INVERTED = false;
