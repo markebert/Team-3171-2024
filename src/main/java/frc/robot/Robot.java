@@ -240,9 +240,11 @@ public class Robot extends TimedRobot implements RobotProperties {
 
       visionController.smartdashboard(PHOTON_CAMERAS_CONFIGS.get("FRONT_TARGETING_CAMERA").getCAMERA_NAME());
       PhotonTrackedTarget frontTargetingCameraBestTarget = visionController.getCameraBestTarget("FRONT_TARGETING_CAMERA");
-      SmartDashboard.putString("Front Targeting Camera Tracking Angle:",
-          String.format("%.2f", Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw())));
+      if (frontTargetingCameraBestTarget != null) {
+        SmartDashboard.putString("Front Targeting Camera Tracking Angle:",
+        String.format("%.2f", Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw())));
 
+      }
       swerveDrive.SmartDashboard();
     }
 

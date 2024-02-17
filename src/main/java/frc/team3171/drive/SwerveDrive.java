@@ -12,7 +12,6 @@ import java.util.List;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.Filesystem;
 
 // Team 3171 Imports
 import frc.robot.RobotProperties;
@@ -189,7 +188,7 @@ public class SwerveDrive implements RobotProperties {
      */
     public synchronized void saveSlewCalibration(final String slewOffsets) {
         try {
-            File calibrationFile = new File(String.format("%s/%s.txt", Filesystem.getDeployDirectory(), "slewcalibration"));
+            File calibrationFile = new File(String.format("/home/lvuser/%s.txt", "slewcalibration"));
             if (calibrationFile.exists()) {
                 calibrationFile.delete();
             }
@@ -212,7 +211,7 @@ public class SwerveDrive implements RobotProperties {
      */
     public synchronized void loadSlewCalibration() {
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(String.format("%s/%s.txt", Filesystem.getDeployDirectory(), "slewcalibration")));
+            BufferedReader reader = new BufferedReader(new FileReader(String.format("/home/lvuser/%s.txt", "slewcalibration")));
             String dataString = reader.readLine();
 
             // Parse the string

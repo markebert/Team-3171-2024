@@ -28,7 +28,7 @@ public interface RobotProperties {
         /** Drive Variables **/
         public static final boolean FIELD_ORIENTED_SWERVE = true;
         public static final double JOYSTICK_DEADZONE = .08;
-        public static final double MAX_DRIVE_SPEED = .5, MAX_ROTATION_SPEED = .6;
+        public static final double MAX_DRIVE_SPEED = 1, MAX_ROTATION_SPEED = .6;
         public static final boolean PINWHEEL_ZERO_ORIENTATION = true;
         public static final boolean SWERVE_UNIT_ORIENTATION_OPTIMIZATION = true;
 

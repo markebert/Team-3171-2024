@@ -67,13 +67,17 @@ public class SwerveUnit implements DoubleSupplier, RobotProperties {
                 break;
             case REV_SPARKFLEX:
                 driveMotor = new CANSparkFlex(swerveUnitConfig.getDriveMotorID(), MotorType.kBrushless);
+                ((CANSparkFlex) driveMotor).restoreFactoryDefaults();
                 ((CANSparkFlex) driveMotor).setInverted(swerveUnitConfig.isDriveMotorInverted());
                 ((CANSparkFlex) driveMotor).setIdleMode(IdleMode.kBrake);
+                ((CANSparkFlex) driveMotor).burnFlash();
                 break;
             default:
                 driveMotor = new CANSparkMax(swerveUnitConfig.getDriveMotorID(), MotorType.kBrushless);
+                ((CANSparkMax) driveMotor).restoreFactoryDefaults();
                 ((CANSparkMax) driveMotor).setInverted(swerveUnitConfig.isDriveMotorInverted());
                 ((CANSparkMax) driveMotor).setIdleMode(IdleMode.kBrake);
+                ((CANSparkMax) driveMotor).burnFlash();
                 break;
         }
 
@@ -87,13 +91,17 @@ public class SwerveUnit implements DoubleSupplier, RobotProperties {
                 break;
             case REV_SPARKFLEX:
                 slewMotor = new CANSparkFlex(swerveUnitConfig.getSlewMotorID(), MotorType.kBrushless);
+                ((CANSparkFlex) slewMotor).restoreFactoryDefaults();
                 ((CANSparkFlex) slewMotor).setInverted(swerveUnitConfig.isSlewMotorInverted());
                 ((CANSparkFlex) slewMotor).setIdleMode(IdleMode.kBrake);
+                ((CANSparkFlex) slewMotor).burnFlash();
                 break;
             default:
                 slewMotor = new CANSparkMax(swerveUnitConfig.getSlewMotorID(), MotorType.kBrushless);
+                ((CANSparkMax) slewMotor).restoreFactoryDefaults();
                 ((CANSparkMax) slewMotor).setInverted(swerveUnitConfig.isSlewMotorInverted());
                 ((CANSparkMax) slewMotor).setIdleMode(IdleMode.kBrake);
+                ((CANSparkMax) slewMotor).burnFlash();
                 break;
         }
 
