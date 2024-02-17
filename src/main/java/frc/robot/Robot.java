@@ -557,18 +557,21 @@ public class Robot extends TimedRobot implements RobotProperties {
       } else if (button_Pickup) {
         // Pickup controls while held
         shooterTiltTargetPosition = 0;
-        if (Within_Percent_Error(shooterController.getShooterTilt(), shooterTiltTargetPosition, SHOOTER_TILT_DESIRED_PERCENT_ACCURACY)) {
-          if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
-            shooterController.setLowerFeederSpeed(0);
-            shooterController.setUpperFeederSpeed(0);
-          } else {
-            shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
-            shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
-          }
-        } else {
+        // if (Within_Percent_Error(shooterController.getShooterTilt(), shooterTiltTargetPosition,
+        // SHOOTER_TILT_DESIRED_PERCENT_ACCURACY)) {
+        if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
           shooterController.setLowerFeederSpeed(0);
           shooterController.setUpperFeederSpeed(0);
+        } else {
+          shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
+          shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
         }
+        /*
+         * } else {
+         * shooterController.setLowerFeederSpeed(0);
+         * shooterController.setUpperFeederSpeed(0);
+         * }
+         */
       } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null)) {
         // Pickup control when ended
         shooterController.setLowerFeederSpeed(0);
