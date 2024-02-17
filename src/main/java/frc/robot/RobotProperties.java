@@ -65,8 +65,8 @@ public interface RobotProperties {
         };
 
         public static final int SHOOTER_TILT_ID = 4;
-        public static final double SHOOTER_TILT_ZERO_POSITION = 25;
-        public static final double SHOOTER_TILT_MIN_POSITION = -75, SHOOTER_TILT_MAX_POSITION = 75;
+        public static final double SHOOTER_TILT_ZERO_POSITION = 11.25;
+        public static final double SHOOTER_TILT_MIN_POSITION = -65, SHOOTER_TILT_MAX_POSITION = 65;
 
         /** Feeder Variables **/
         public static final boolean LOWER_FEEDER_INVERTED = false, UPPER_FEEDER_INVERTED = false;

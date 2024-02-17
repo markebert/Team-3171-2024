@@ -148,7 +148,13 @@ public class Shooter implements RobotProperties {
                     }
                 } else {
                     shooterTiltPIDController.disablePID();
-                    shooterTiltMotor.set(tiltSpeed);
+                    final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && tiltSpeed < 0;
+                    final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && tiltSpeed > 0;
+                    if (lowerLimit || upperLimit) {
+                        shooterTiltMotor.set(0);
+                    } else {
+                        shooterTiltMotor.set(tiltSpeed);
+                    }
                 }
 
                 // Shooter Motors Update
