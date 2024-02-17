@@ -23,9 +23,6 @@ import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
 
 // Photon Vision Imports
-import org.photonvision.PhotonCamera;
-import org.photonvision.PhotonUtils;
-import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 // Team 3171 Imports
@@ -37,7 +34,6 @@ import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
 import frc.team3171.controllers.VisionController;
-
 import static frc.team3171.HelperFunctions.Deadzone_With_Map;
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 import static frc.team3171.HelperFunctions.Within_Percent_Error;

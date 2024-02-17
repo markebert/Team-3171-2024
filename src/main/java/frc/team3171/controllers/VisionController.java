@@ -1,10 +1,11 @@
 package frc.team3171.controllers;
 
+// Java Imports
+import java.util.HashMap;
+
 // FRC Imports
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
-import java.util.HashMap;
 
 // Photon Vision Imports
 import org.photonvision.PhotonCamera;
@@ -14,8 +15,12 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 // Team 3171 Imports
 import frc.robot.RobotProperties;
+import frc.team3171.models.PhotonAprilTagTarget;
 import frc.team3171.models.PhotonCameraConfig;
 
+/**
+ * @author Mark Ebert
+ */
 public class VisionController implements RobotProperties {
 
     // Photon Vision Objects
@@ -50,6 +55,29 @@ public class VisionController implements RobotProperties {
         }
         return null;
 
+    }
+
+    public HashMap<Integer, PhotonAprilTagTarget> getAllVisibleAprilTags() {
+        final HashMap<Integer, PhotonAprilTagTarget> targetData = new HashMap<Integer, PhotonAprilTagTarget>();
+        // Query all cameras for aprils tags
+        PHOTON_CAMERAS.forEach((photonCameraName, photonCamera) -> {
+            if (photonCamera.isConnected()) {
+                PhotonPipelineResult result = photonCamera.getLatestResult();
+                if (result.hasTargets()) {
+                    result.targets.forEach((target) -> {
+                        PhotonAprilTagTarget existingTarget = targetData.get(target.getFiducialId());
+                        if (existingTarget != null) {
+                            if (target.getArea() > existingTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+                                targetData.put(target.getFiducialId(), new PhotonAprilTagTarget(photonCameraName, target));
+                            }
+                        } else {
+                            targetData.put(target.getFiducialId(), new PhotonAprilTagTarget(photonCameraName, target));
+                        }
+                    });
+                }
+            }
+        });
+        return targetData;
     }
 
     public void smartdashboard(final String photonCameraName) {
