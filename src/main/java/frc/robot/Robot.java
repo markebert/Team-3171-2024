@@ -21,6 +21,8 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 // REV Imports
 import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 
 // Photon Vision Imports
 import org.photonvision.targeting.PhotonTrackedTarget;
@@ -57,6 +59,9 @@ public class Robot extends TimedRobot implements RobotProperties {
   private Shooter shooterController;
   private ColorSensorV3 upperFeedColorSensor;
   private ColorMatch colorMatcher;
+
+  // Linear Actuators
+  private CANSparkMax leftAcuator, rightAcuator;
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -102,6 +107,10 @@ public class Robot extends TimedRobot implements RobotProperties {
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    // Linear Acuators
+    leftAcuator = new CANSparkMax(LEFT_ACUATOR_CAN_ID, MotorType.kBrushed);
+    rightAcuator = new CANSparkMax(RIGHT_ACUATOR_CAN_ID, MotorType.kBrushed);
 
     // Sensors
     gyro = new Pigeon2(GYRO_CAN_ID);
@@ -242,8 +251,7 @@ public class Robot extends TimedRobot implements RobotProperties {
       PhotonTrackedTarget frontTargetingCameraBestTarget = visionController.getCameraBestTarget("FRONT_TARGETING_CAMERA");
       if (frontTargetingCameraBestTarget != null) {
         SmartDashboard.putString("Front Targeting Camera Tracking Angle:",
-        String.format("%.2f", Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw())));
-
+            String.format("%.2f", Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw())));
       }
       swerveDrive.SmartDashboard();
     }
@@ -455,21 +463,27 @@ public class Robot extends TimedRobot implements RobotProperties {
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
     }
 
-    // TODO Arm Controls
+    // Arm Controls
     if (driveControllerState.getLeftBumper()) {
       // Raise Left Arm
+      leftAcuator.set(1);
     } else if (driveControllerState.getLeftTriggerAxis() > .02) {
       // Lower Left Arm
+      leftAcuator.set(-1);
     } else {
       // Disable Left Arm
+      leftAcuator.set(0);
     }
 
     if (driveControllerState.getRightBumper()) {
       // Raise Right Arm
+      rightAcuator.set(1);
     } else if (driveControllerState.getRightTriggerAxis() > .02) {
       // Lower Right Arm
+      rightAcuator.set(-1);
     } else {
       // Disable Right Arm
+      rightAcuator.set(0);
     }
   }
 

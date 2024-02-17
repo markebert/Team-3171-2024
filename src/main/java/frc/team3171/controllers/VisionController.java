@@ -54,7 +54,6 @@ public class VisionController implements RobotProperties {
             }
         }
         return null;
-
     }
 
     public HashMap<Integer, PhotonAprilTagTarget> getAllVisibleAprilTags() {

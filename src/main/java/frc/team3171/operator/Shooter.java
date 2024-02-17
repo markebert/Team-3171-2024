@@ -111,7 +111,7 @@ public class Shooter implements RobotProperties {
         shooterTiltMotor.setInverted(SHOOTER_TILT_INVERTED);
         shooterTiltMotor.burnFlash();
 
-        tiltEncoder = new DutyCycleEncoder(4);
+        tiltEncoder = new DutyCycleEncoder(SHOOTER_TILT_ID);
 
         shooterTiltPIDController = new ThreadedPIDController(this::getShooterTilt, TILT_KP, TILT_KI, TILT_KD, TILT_MIN, TILT_MAX, false);
         shooterTiltPIDController.setMinValue(-180);
