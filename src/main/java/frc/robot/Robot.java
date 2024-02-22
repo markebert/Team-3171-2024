@@ -113,7 +113,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     rightAcuator = new CANSparkMax(RIGHT_ACUATOR_CAN_ID, MotorType.kBrushed);
 
     // Sensors
-    gyro = new Pigeon2(GYRO_CAN_ID);
+    gyro = new Pigeon2(GYRO_CAN_ID, "canivore");
     gyro.reset();
     upperFeedColorSensor = new ColorSensorV3(Port.kOnboard);
     colorMatcher = new ColorMatch();
@@ -484,6 +484,10 @@ public class Robot extends TimedRobot implements RobotProperties {
     } else {
       // Disable Right Arm
       rightAcuator.set(0);
+    }
+
+    if (driveControllerState.getLeftBumper() || driveControllerState.getRightBumper() || driveControllerState.getLeftTriggerAxis() > .02 || driveControllerState.getRightTriggerAxis() > .02) {
+      shooterTiltTargetPosition = 70;
     }
   }
 

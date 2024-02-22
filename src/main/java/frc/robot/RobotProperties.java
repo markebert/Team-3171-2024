@@ -54,13 +54,13 @@ public interface RobotProperties {
         public static final boolean LOWER_SHOOTER_INVERTED = true, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
         public static final double SHOOTER_TILT_DESIRED_PERCENT_ACCURACY = .5; // Shooter Tilt Accuracy Settings
         public static final double SHOOTER_DESIRED_PERCENT_ACCURACY = .05; // Shooter Veloctity Accuracy Settings
-        public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .2; // Shooter Veloctity Time Window Settings
+        public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .5; // Shooter Veloctity Time Window Settings
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
                         put("SHORT_SHOT", new ShooterShot(45, 300, 2000));
-                        put("NORMAL_SHOT", new ShooterShot(35, 2500, 2500));
-                        put("FAR_SHOT", new ShooterShot( 60, 4000, 4000));
+                        put("NORMAL_SHOT", new ShooterShot(40, 2500, 3000));
+                        put("FAR_SHOT", new ShooterShot( 59, 4000, 4000));
                         put("YEET_SHOT", new ShooterShot(69, 5500, 5500));
                 }
         };
@@ -76,7 +76,7 @@ public interface RobotProperties {
         public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .8;
         public static final double LOWER_FEED_BACKFEED_SPEED = 0, UPPER_FEED_BACKFEED_SPEED = -.075;
         public static final Color RING_COLOR_ONE = new Color(143, 90, 21);
-        public static final double COLOR_CONFIDENCE = .8;
+        public static final double COLOR_CONFIDENCE = .85;
 
         /** Photon Vision Constants **/
         public static final HashMap<String, PhotonCameraConfig> PHOTON_CAMERAS_CONFIGS = new HashMap<>() {
@@ -102,7 +102,7 @@ public interface RobotProperties {
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
         public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_KF = 0, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
         public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_KF = 0, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
-        public static final double TILT_KP = .007, TILT_KI = .003, TILT_KD = -.01, TILT_KF = 0, TILT_MIN = -.75, TILT_MAX = .75;
+        public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_KF = 0, TILT_MIN = -.75, TILT_MAX = .75;
 
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";
