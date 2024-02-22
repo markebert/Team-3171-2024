@@ -47,32 +47,33 @@ public interface RobotProperties {
         public static final int LOWER_SHOOTER_CAN_ID = 17, UPPER_SHOOTER_CAN_ID = 16, SHOOTER_TILT_CAN_ID = 15;
         public static final int LOWER_FEEDER_MASTER_CAN_ID = 11, LOWER_FEEDER_FOLLOWER_CAN_ID = 12;
         public static final int UPPER_FEEDER_MASTER_CAN_ID = 13, UPPER_FEEDER_FOLLOWER_CAN_ID = 14;
-        public static final int LEFT_ACUATOR_CAN_ID = 18, RIGHT_ACUATOR_CAN_ID = 19;
+        public static final int LEFT_ACUATOR_CAN_ID = 18
+, RIGHT_ACUATOR_CAN_ID = 19;
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = true, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
-        public static final double SHOOTER_TILT_DESIRED_PERCENT_ACCURACY = .1; // Shooter Tilt Accuracy Settings
+        public static final double SHOOTER_TILT_DESIRED_PERCENT_ACCURACY = .5; // Shooter Tilt Accuracy Settings
         public static final double SHOOTER_DESIRED_PERCENT_ACCURACY = .05; // Shooter Veloctity Accuracy Settings
         public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .2; // Shooter Veloctity Time Window Settings
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
-                        put("SHORT_SHOT", new ShooterShot(60, 2500, 2500));
-                        put("NORMAL_SHOT", new ShooterShot(45, 3150, 400));
-                        put("FAR_SHOT", new ShooterShot(35, 4000, 4000));
-                        put("YEET_SHOT", new ShooterShot(60, 6300, 6300));
+                        put("SHORT_SHOT", new ShooterShot(45, 300, 2000));
+                        put("NORMAL_SHOT", new ShooterShot(35, 2500, 2500));
+                        put("FAR_SHOT", new ShooterShot( 60, 4000, 4000));
+                        put("YEET_SHOT", new ShooterShot(69, 5500, 5500));
                 }
         };
 
         public static final int SHOOTER_TILT_ID = 4;
         public static final double SHOOTER_TILT_ZERO_POSITION = 11.25;
-        public static final double SHOOTER_TILT_MIN_POSITION = -65, SHOOTER_TILT_MAX_POSITION = 65;
+        public static final double SHOOTER_TILT_MIN_POSITION = -70, SHOOTER_TILT_MAX_POSITION = 70;
 
         /** Feeder Variables **/
-        public static final boolean LOWER_FEEDER_INVERTED = false, UPPER_FEEDER_INVERTED = false;
+        public static final boolean LOWER_FEEDER_INVERTED = true, UPPER_FEEDER_INVERTED = false;
         public static final double LOWER_FEED_PICKUP_SPEED = .5, UPPER_FEED_PICKUP_SPEED = .25;
         public static final double UPPER_FEED_END_SPEED = -.1, UPPER_FEED_END_TIME = .1;
-        public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .4;
+        public static final double LOWER_FEED_SHOOT_SPEED = 0, UPPER_FEED_SHOOT_SPEED = .8;
         public static final double LOWER_FEED_BACKFEED_SPEED = 0, UPPER_FEED_BACKFEED_SPEED = -.075;
         public static final Color RING_COLOR_ONE = new Color(143, 90, 21);
         public static final double COLOR_CONFIDENCE = .8;
