@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 // FRC Imports
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.util.Color;
 
 // Team 3171 Imports
@@ -84,6 +85,17 @@ public interface RobotProperties {
                         put("REAR_TARGETING_CAMERA", new PhotonCameraConfig("REAR_TARGETING_CAMERA", Units.inchesToMeters(14), Units.degreesToRadians(22.5)));
                         put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(0), Units.degreesToRadians(0)));
                         put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(0), Units.degreesToRadians(0)));
+                }
+        };
+
+        public static final HashMap<Integer, Alliance> APRILTAG_FIELD_COLOR = new HashMap<>() {
+                {
+                        put(1, Alliance.Blue);
+                        put(2, Alliance.Blue);
+                        put(3, Alliance.Blue);
+                        put(4, Alliance.Red);
+                        put(5, Alliance.Red);
+                        put(6, Alliance.Red);
                 }
         };
         public static final HashMap<Integer, Double> APRILTAG_HEIGHTS_METERS = new HashMap<>() {
