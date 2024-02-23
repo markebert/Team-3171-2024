@@ -47,8 +47,7 @@ public interface RobotProperties {
         public static final int LOWER_SHOOTER_CAN_ID = 17, UPPER_SHOOTER_CAN_ID = 16, SHOOTER_TILT_CAN_ID = 15;
         public static final int LOWER_FEEDER_MASTER_CAN_ID = 11, LOWER_FEEDER_FOLLOWER_CAN_ID = 12;
         public static final int UPPER_FEEDER_MASTER_CAN_ID = 13, UPPER_FEEDER_FOLLOWER_CAN_ID = 14;
-        public static final int LEFT_ACUATOR_CAN_ID = 18
-, RIGHT_ACUATOR_CAN_ID = 19;
+        public static final int LEFT_ACUATOR_CAN_ID = 18, RIGHT_ACUATOR_CAN_ID = 19;
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = true, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
@@ -60,7 +59,7 @@ public interface RobotProperties {
                 {
                         put("SHORT_SHOT", new ShooterShot(45, 300, 2000));
                         put("NORMAL_SHOT", new ShooterShot(40, 2500, 3000));
-                        put("FAR_SHOT", new ShooterShot( 59, 4000, 4000));
+                        put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
                         put("YEET_SHOT", new ShooterShot(69, 5500, 5500));
                 }
         };
