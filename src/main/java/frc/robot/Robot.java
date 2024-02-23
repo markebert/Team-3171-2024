@@ -416,7 +416,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   private void driveControlsPeriodic(final XboxControllerState driveControllerState) {
     // Gyro Value
-    final double gyroValue = Normalize_Gryo_Value(gyro.getAngle());
+    final double gyroValue = gyroPIDController.getSensorValue();
 
     // Get the needed joystick values after calculating the deadzones
     final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
