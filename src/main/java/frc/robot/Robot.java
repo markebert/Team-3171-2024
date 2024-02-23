@@ -609,7 +609,8 @@ public class Robot extends TimedRobot implements RobotProperties {
       shooterController.setShooterTiltSpeed(leftStickY / 4);
       shooterTiltTargetPosition = shooterController.getShooterTilt();
     } else {
-      shooterController.setShooterTiltPosition(shooterTiltTargetPosition);
+      final double gyroValue = gyroPIDController.getSensorValue();
+      shooterController.setShooterTiltPosition(gyroValue < -90 || gyroValue > 90 ? -shooterTiltTargetPosition : shooterTiltTargetPosition);
     }
 
     // Edge Trigger Updates
