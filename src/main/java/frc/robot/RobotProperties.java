@@ -100,8 +100,8 @@ public interface RobotProperties {
         /** PID Variables **/
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
         public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_KF = 0, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
-        public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_KF = 0, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
-        public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_KF = 0, TILT_MIN = -.75, TILT_MAX = .75;
+        public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
+        public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
 
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";
