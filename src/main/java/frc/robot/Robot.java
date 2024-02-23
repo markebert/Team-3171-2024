@@ -38,8 +38,8 @@ import frc.team3171.controllers.ThreadedPIDController;
 import frc.team3171.controllers.VisionController;
 import static frc.team3171.HelperFunctions.Deadzone;
 import static frc.team3171.HelperFunctions.Deadzone_With_Map;
+import static frc.team3171.HelperFunctions.Get_Gyro_Displacement;
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
-import static frc.team3171.HelperFunctions.Within_Percent_Error;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to each mode, as
@@ -230,7 +230,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
 
     // Shooter Info
-    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY));
+    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION));
     SmartDashboard.putString("Lower Shooter RPM:",
         String.format("%.2f | %.2f", shooterController.getLowerShooterVelocity(), shooterController.getLowerShooterTargetVelocity()));
     SmartDashboard.putString("Upper Shooter RPM:",
@@ -542,7 +542,7 @@ public class Robot extends TimedRobot implements RobotProperties {
       }
     } else if (button_Shooter) {
       // Check if the shooter is at speed
-      final boolean isShooterAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_DESIRED_PERCENT_ACCURACY);
+      final boolean isShooterAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION);
       if (isShooterAtSpeed && !shooterAtSpeedEdgeTrigger) {
         // Get time that shooter first designated at speed
         shooterAtSpeedStartTime = Timer.getFPGATimestamp();
@@ -569,21 +569,18 @@ public class Robot extends TimedRobot implements RobotProperties {
       } else if (button_Pickup) {
         // Pickup controls while held
         shooterTiltTargetPosition = 0;
-        // if (Within_Percent_Error(shooterController.getShooterTilt(), shooterTiltTargetPosition,
-        // SHOOTER_TILT_DESIRED_PERCENT_ACCURACY)) {
-        if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+        if (Math.abs(Get_Gyro_Displacement(shooterController.getShooterTilt(), shooterTiltTargetPosition)) < SHOOTER_TILT_ALLOWED_DEVIATION) {
+          if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+            shooterController.setLowerFeederSpeed(0);
+            shooterController.setUpperFeederSpeed(0);
+          } else {
+            shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
+            shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
+          }
+        } else {
           shooterController.setLowerFeederSpeed(0);
           shooterController.setUpperFeederSpeed(0);
-        } else {
-          shooterController.setLowerFeederSpeed(LOWER_FEED_PICKUP_SPEED);
-          shooterController.setUpperFeederSpeed(UPPER_FEED_PICKUP_SPEED);
         }
-        /*
-         * } else {
-         * shooterController.setLowerFeederSpeed(0);
-         * shooterController.setUpperFeederSpeed(0);
-         * }
-         */
       } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null)) {
         // Pickup control when ended
         shooterController.setLowerFeederSpeed(0);
