@@ -3,8 +3,11 @@ package frc.team3171.controllers;
 // Java Imports
 import java.util.HashMap;
 
+import edu.wpi.first.apriltag.AprilTag;
 // FRC Imports
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 // Photon Vision Imports
@@ -79,6 +82,45 @@ public class VisionController implements RobotProperties {
         return targetData;
     }
 
+    public void shuffleboardTabInit(final String photonCameraName, final String tabName) {
+        final PhotonCameraConfig photonCameraConfig = PHOTON_CAMERAS_CONFIGS.get(photonCameraName);
+        final PhotonCamera photonCamera = PHOTON_CAMERAS.get(photonCameraName);
+
+        // Check that the provided camera name returned an actual result
+        if (photonCameraConfig == null || photonCamera == null) {
+            System.err.printf("The provided camera name [%s] did not return a valid result!\nPlease verify that the camera was initialized correctly.\n",
+                    photonCameraName);
+            return;
+        }
+
+        ShuffleboardTab selectedTab = Shuffleboard.getTab(tabName);
+        selectedTab.addBoolean(String.format("%s:", photonCameraName), () -> photonCamera.isConnected());
+        APRILTAG_FIELD_COLOR.forEach((targetID, alliance) -> {
+            selectedTab.addString(String.format("ID: %d", targetID), () -> {
+                // Photon Vision Read Outs
+                double range = -1, yaw = 0, pitch = 0;
+                if (photonCamera.isConnected()) {
+                    PhotonPipelineResult result = photonCamera.getLatestResult();
+                    if (result.hasTargets()) {
+                        for (PhotonTrackedTarget target : result.getTargets()) {
+                            if (target.getFiducialId() == targetID) {
+                                final AprilTag aprilTag = AprilTagLayout.getTags().get(targetID);
+                                final double targetHeightMeters = aprilTag.pose.getZ();
+                                range = PhotonUtils.calculateDistanceToTargetMeters(
+                                        photonCameraConfig.getCAMERA_HEIGHT_METERS(),
+                                        targetHeightMeters,
+                                        photonCameraConfig.getCAMERA_PITCH_RADIANS(),
+                                        Units.degreesToRadians(target.getPitch()));
+                                yaw = target.getYaw();
+                            }
+                        }
+                    }
+                }
+                return String.format("R: %.2f | Y: %.2f | P: %.2f", range, yaw, pitch);
+            });
+        });
+    }
+
     public void smartdashboard(final String photonCameraName) {
         final PhotonCameraConfig photonCameraConfig = PHOTON_CAMERAS_CONFIGS.get(photonCameraName);
         final PhotonCamera photonCamera = PHOTON_CAMERAS.get(photonCameraName);
@@ -98,18 +140,13 @@ public class VisionController implements RobotProperties {
             if (result.hasTargets()) {
                 PhotonTrackedTarget bestTarget = result.getBestTarget();
                 targetID = bestTarget.getFiducialId();
-                final Double targetHeightMeters = APRILTAG_HEIGHTS_METERS.get(targetID);
-                if (targetHeightMeters == null) {
-                    System.err.printf(
-                            "The AprilTag with ID [%s] did not return a valid target height!\nPlease verify that the target height was initialized correctly in 'APRILTAG_HEIGHTS_METERS' in RobotProperties.java.\n",
-                            photonCameraName);
-                } else {
-                    range = PhotonUtils.calculateDistanceToTargetMeters(
-                            photonCameraConfig.getCAMERA_HEIGHT_METERS(),
-                            targetHeightMeters,
-                            photonCameraConfig.getCAMERA_PITCH_RADIANS(),
-                            Units.degreesToRadians(bestTarget.getPitch()));
-                }
+                final AprilTag aprilTag = AprilTagLayout.getTags().get(targetID);
+                final double targetHeightMeters = aprilTag.pose.getZ();
+                range = PhotonUtils.calculateDistanceToTargetMeters(
+                        photonCameraConfig.getCAMERA_HEIGHT_METERS(),
+                        targetHeightMeters,
+                        photonCameraConfig.getCAMERA_PITCH_RADIANS(),
+                        Units.degreesToRadians(bestTarget.getPitch()));
                 yaw = bestTarget.getYaw();
             }
         }
@@ -117,4 +154,5 @@ public class VisionController implements RobotProperties {
         SmartDashboard.putString(String.format("%s Best Target:", photonCameraName),
                 String.format("ID: %d | R: %.2f | Y: %.2f | P: %.2f", targetID, range, yaw, pitch));
     }
+
 }

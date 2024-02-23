@@ -3,6 +3,8 @@ package frc.robot;
 // Java Imports
 import java.util.HashMap;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
 // FRC Imports
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -90,24 +92,35 @@ public interface RobotProperties {
 
         public static final HashMap<Integer, Alliance> APRILTAG_FIELD_COLOR = new HashMap<>() {
                 {
+                        // Blue Feed Station
                         put(1, Alliance.Blue);
                         put(2, Alliance.Blue);
-                        put(3, Alliance.Blue);
-                        put(4, Alliance.Red);
+                        // Red Speaker
+                        put(3, Alliance.Red);
+                        put(4, Alliance.Red); // More Centered
+                        // Red Low Goal
                         put(5, Alliance.Red);
-                        put(6, Alliance.Red);
+                        // Blue Low Goal
+                        put(6, Alliance.Blue);
+                        // Blue Speaker
+                        put(7, Alliance.Blue); // More Centered
+                        put(8, Alliance.Blue);
+                        // Red Feed Station
+                        put(9, Alliance.Red);
+                        put(10, Alliance.Red);
+                        // Red Center Goals
+                        put(11, Alliance.Red);
+                        put(12, Alliance.Red);
+                        put(13, Alliance.Red);
+                        // Blue Center Goals
+                        put(14, Alliance.Blue);
+                        put(15, Alliance.Blue);
+                        put(16, Alliance.Blue);
+
                 }
         };
-        public static final HashMap<Integer, Double> APRILTAG_HEIGHTS_METERS = new HashMap<>() {
-                {
-                        put(1, Units.inchesToMeters(56.125));
-                        put(2, Units.inchesToMeters(56.125));
-                        put(3, Units.inchesToMeters(56.125));
-                        put(4, Units.inchesToMeters(56.125));
-                        put(5, Units.inchesToMeters(56.125));
-                        put(6, Units.inchesToMeters(56.125));
-                }
-        };
+
+        public static final AprilTagFieldLayout AprilTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
 
         /** PID Variables **/
         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;

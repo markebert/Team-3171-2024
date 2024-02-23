@@ -162,6 +162,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Vision Controller Init
     visionController = new VisionController();
+    visionController.shuffleboardTabInit("FRONT_TARGETING_CAMERA", "Front Cameras");
 
     // Global Variable Init
     fieldOrientationChosen = false;
