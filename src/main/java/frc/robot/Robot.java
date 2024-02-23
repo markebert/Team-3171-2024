@@ -32,7 +32,6 @@ import frc.team3171.drive.SwerveDrive;
 import frc.team3171.models.ShooterShot;
 import frc.team3171.models.XboxControllerState;
 import frc.team3171.operator.Shooter;
-import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
