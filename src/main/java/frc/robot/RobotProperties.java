@@ -83,10 +83,10 @@ public interface RobotProperties {
         /** Photon Vision Constants **/
         public static final HashMap<String, PhotonCameraConfig> PHOTON_CAMERAS_CONFIGS = new HashMap<>() {
                 {
-                        put("FRONT_TARGETING_CAMERA", new PhotonCameraConfig("FRONT_TARGETING_CAMERA", Units.inchesToMeters(14), Units.degreesToRadians(22.5)));
-                        put("REAR_TARGETING_CAMERA", new PhotonCameraConfig("REAR_TARGETING_CAMERA", Units.inchesToMeters(14), Units.degreesToRadians(22.5)));
-                        put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(0), Units.degreesToRadians(0)));
-                        put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(0), Units.degreesToRadians(0)));
+                        put("FRONT_TARGETING_CAMERA", new PhotonCameraConfig("FRONT_TARGETING_CAMERA", Units.inchesToMeters(15), Units.degreesToRadians(22.5)));
+                        put("REAR_TARGETING_CAMERA", new PhotonCameraConfig("REAR_TARGETING_CAMERA", Units.inchesToMeters(15), Units.degreesToRadians(22.5)));
+                        put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
+                        put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
                 }
         };
 
