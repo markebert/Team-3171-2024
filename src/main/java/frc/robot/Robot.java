@@ -32,10 +32,12 @@ import frc.team3171.drive.SwerveDrive;
 import frc.team3171.models.ShooterShot;
 import frc.team3171.models.XboxControllerState;
 import frc.team3171.operator.Shooter;
+import frc.team3171.HelperFunctions;
 import frc.team3171.auton.AutonRecorder;
 import frc.team3171.auton.AutonRecorderData;
 import frc.team3171.controllers.ThreadedPIDController;
 import frc.team3171.controllers.VisionController;
+import static frc.team3171.HelperFunctions.Deadzone;
 import static frc.team3171.HelperFunctions.Deadzone_With_Map;
 import static frc.team3171.HelperFunctions.Normalize_Gryo_Value;
 import static frc.team3171.HelperFunctions.Within_Percent_Error;
@@ -433,11 +435,13 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Drive Controls
     final boolean boostMode = driveControllerState.getXButton();
+    final boolean targetLocking = driveControllerState.getAButton();
+    final boolean pickupLocking = driveControllerState.getBButton();
     if (rightStickX != 0) {
       // Manual turning
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
-    } else if (driveControllerState.getAButton()) {
+    } else if (targetLocking) {
       // April Tag Target Locking
       gyroPIDController.enablePID();
 
@@ -448,7 +452,7 @@ public class Robot extends TimedRobot implements RobotProperties {
       }
 
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
-    } else if (driveControllerState.getBButton()) {
+    } else if (pickupLocking) {
       // TODO Pickup Locking
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
@@ -464,10 +468,12 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     // Arm Controls
-    if (driveControllerState.getLeftBumper()) {
+    final boolean raiseLeftArm = driveControllerState.getLeftBumper();
+    final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
+    if (raiseLeftArm) {
       // Raise Left Arm
       leftAcuator.set(1);
-    } else if (driveControllerState.getLeftTriggerAxis() > .02) {
+    } else if (lowerLeftArm) {
       // Lower Left Arm
       leftAcuator.set(-1);
     } else {
@@ -475,10 +481,12 @@ public class Robot extends TimedRobot implements RobotProperties {
       leftAcuator.set(0);
     }
 
-    if (driveControllerState.getRightBumper()) {
+    final boolean raiseRightArm = driveControllerState.getRightBumper();
+    final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
+    if (raiseRightArm) {
       // Raise Right Arm
       rightAcuator.set(1);
-    } else if (driveControllerState.getRightTriggerAxis() > .02) {
+    } else if (lowerRightArm) {
       // Lower Right Arm
       rightAcuator.set(-1);
     } else {
@@ -486,7 +494,8 @@ public class Robot extends TimedRobot implements RobotProperties {
       rightAcuator.set(0);
     }
 
-    if (driveControllerState.getLeftBumper() || driveControllerState.getRightBumper() || driveControllerState.getLeftTriggerAxis() > .02 || driveControllerState.getRightTriggerAxis() > .02) {
+    if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
+      // Force the shooter down
       shooterTiltTargetPosition = 70;
     }
   }
