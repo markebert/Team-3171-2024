@@ -6,8 +6,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.io.IOException;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.Timer;
@@ -26,7 +24,6 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 import frc.robot.RobotProperties;
 import frc.team3171.HelperFunctions;
 import frc.team3171.controllers.ThreadedPIDController;
-import frc.team3171.networking.UDPClient;
 
 /**
  * @author Mark Ebert
@@ -36,11 +33,9 @@ public class Shooter implements RobotProperties {
     // Motor Controllers
     private final CANSparkFlex lowerShooterMotor, upperShooterMotor;
     private final CANSparkMax lowerFeederMotorMaster, lowerFeederMotorFollower, upperFeederMotorMaster, upperFeederMotorFollower, shooterTiltMotor;
-    // private final SparkMaxPIDController pickupArmPIDController;
 
     // Tilt Encoder
     private final DutyCycleEncoder tiltEncoder;
-    private boolean positionControl;
     private double tiltSpeed;
     private boolean shooterFlipped = false;
 
@@ -83,8 +78,6 @@ public class Shooter implements RobotProperties {
         lowerFeederMotorFollower.follow(lowerFeederMotorMaster);
         upperFeederMotorFollower.follow(upperFeederMotorMaster);
 
-        ConcurrentLinkedQueue<String> pidData = new ConcurrentLinkedQueue<String>();
-
         // Configure the velocity closed loop values
         lowerShooterMotor.restoreFactoryDefaults();
         lowerShooterMotor.setIdleMode(IdleMode.kBrake);
@@ -116,8 +109,7 @@ public class Shooter implements RobotProperties {
         shooterTiltPIDController = new ThreadedPIDController(this::getShooterTilt, TILT_KP, TILT_KI, TILT_KD, TILT_MIN, TILT_MAX, false);
         shooterTiltPIDController.setMinValue(-180);
         shooterTiltPIDController.setMaxValue(180);
-        shooterTiltPIDController.start(20, true, pidData);
-        // shooterTiltPIDController.start(true);
+        shooterTiltPIDController.start(false);
 
         // Initialize the executor service for concurrency
         executorService = Executors.newFixedThreadPool(2);
@@ -135,27 +127,10 @@ public class Shooter implements RobotProperties {
                 final double currentShooterTilt = getShooterTilt();
 
                 // Shooter Tilt Update
-                if (positionControl) {
-                    shooterTiltPIDController.enablePID();
-                    final double pidValue = shooterTiltPIDController.getPIDValue();
-                    final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && pidValue < 0;
-                    final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && pidValue > 0;
-                    if (lowerLimit || upperLimit) {
-                        shooterTiltPIDController.disablePID();
-                        shooterTiltMotor.set(0);
-                    } else {
-                        shooterTiltMotor.set(pidValue);
-                    }
-                } else {
-                    shooterTiltPIDController.disablePID();
-                    final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && tiltSpeed < 0;
-                    final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && tiltSpeed > 0;
-                    if (lowerLimit || upperLimit) {
-                        shooterTiltMotor.set(0);
-                    } else {
-                        shooterTiltMotor.set(tiltSpeed);
-                    }
-                }
+                final double speedValue = shooterTiltPIDController.isEnabled() ? shooterTiltPIDController.getPIDValue() : tiltSpeed;
+                final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && speedValue < 0;
+                final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && speedValue > 0;
+                shooterTiltMotor.set(lowerLimit || upperLimit ? 0 : speedValue);
 
                 // Shooter Motors Update
                 // Check if the shooter is currently flipped over, if so flip the lower and upper velocities
@@ -183,16 +158,6 @@ public class Shooter implements RobotProperties {
                 }
             }
         }, 0, 20, TimeUnit.MILLISECONDS);
-
-        try
-
-        {
-            var pidClient = new UDPClient(pidData, PID_LOG_ADDRESS, 5801);
-            pidClient.start();
-        } catch (IOException ex) {
-            // Do Nothing
-            System.out.println("Could not start any PID logging.");
-        }
     }
 
     /**
@@ -545,18 +510,21 @@ public class Shooter implements RobotProperties {
     }
 
     public void setShooterTiltPosition(final double position) {
-        positionControl = true;
-        tiltSpeed = 0;
         shooterTiltPIDController.enablePID();
+        tiltSpeed = 0;
         if (shooterTiltPIDController.getSensorLockValue() != position) {
             shooterTiltPIDController.updateSensorLockValue(position);
         }
     }
 
+    public void setShooterTiltPosition() {
+        shooterTiltPIDController.enablePID();
+        tiltSpeed = 0;
+    }
+
     public void setShooterTiltSpeed(final double speed) {
-        positionControl = false;
-        tiltSpeed = speed;
         shooterTiltPIDController.disablePID();
+        tiltSpeed = speed;
     }
 
     public double getShooterTiltRaw() {
