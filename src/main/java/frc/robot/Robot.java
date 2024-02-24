@@ -432,7 +432,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     final boolean boostMode = driveControllerState.getXButton();
     final boolean targetLocking = driveControllerState.getAButton();
     final boolean pickupLocking = driveControllerState.getBButton();
-    if (rightStickX != 0) {
+    if (rightStickX != 0 || Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5) {
       // Manual turning
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
