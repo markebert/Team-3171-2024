@@ -82,6 +82,32 @@ public class VisionController implements RobotProperties {
         return targetData;
     }
 
+    public HashMap<Integer, PhotonAprilTagTarget> getAllVisibleAprilTags(final String... photonCameraNames) {
+        final HashMap<Integer, PhotonAprilTagTarget> targetData = new HashMap<Integer, PhotonAprilTagTarget>();
+        // Query all cameras for aprils tags
+        for (String photonCameraName : photonCameraNames) {
+            PhotonCamera photonCamera = PHOTON_CAMERAS.get(photonCameraName);
+            if (photonCamera != null) {
+                if (photonCamera.isConnected()) {
+                    PhotonPipelineResult result = photonCamera.getLatestResult();
+                    if (result.hasTargets()) {
+                        result.targets.forEach((target) -> {
+                            PhotonAprilTagTarget existingTarget = targetData.get(target.getFiducialId());
+                            if (existingTarget != null) {
+                                if (target.getArea() > existingTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+                                    targetData.put(target.getFiducialId(), new PhotonAprilTagTarget(photonCameraName, target));
+                                }
+                            } else {
+                                targetData.put(target.getFiducialId(), new PhotonAprilTagTarget(photonCameraName, target));
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        return targetData;
+    }
+
     public void shuffleboardTabInit(final String photonCameraName, final String tabName) {
         final PhotonCameraConfig photonCameraConfig = PHOTON_CAMERAS_CONFIGS.get(photonCameraName);
         final PhotonCamera photonCamera = PHOTON_CAMERAS.get(photonCameraName);
