@@ -432,7 +432,9 @@ public class Robot extends TimedRobot implements RobotProperties {
     final boolean boostMode = driveControllerState.getXButton();
     final boolean targetLocking = driveControllerState.getAButton();
     final boolean pickupLocking = driveControllerState.getBButton();
-    if (rightStickX != 0 || Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5) {
+    final boolean robotOffGround = Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5;
+    SmartDashboard.putBoolean("Off Ground:", robotOffGround);
+    if (rightStickX != 0 || robotOffGround) {
       // Manual turning
       gyroPIDController.disablePID();
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, rightStickX, boostMode);
@@ -537,13 +539,13 @@ public class Robot extends TimedRobot implements RobotProperties {
       // Shooter Start
       shooterAtSpeedEdgeTrigger = false;
       if (selectedShot != null) {
-        shooterTiltTargetPosition = gyroValue < -135 || gyroValue > 45 ? -selectedShot.getShooterAngle() : selectedShot.getShooterAngle();
+        shooterTiltTargetPosition = gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle();
         shooterController.setShooterVelocity(selectedShot.lowerShooterRPM, selectedShot.upperShooterRPM);
       } else {
         shooterController.setShooterSpeed(1);
       }
     } else if (button_Shooter) {
-      shooterTiltTargetPosition = gyroValue < -135 || gyroValue > 45 ? -selectedShot.getShooterAngle() : selectedShot.getShooterAngle();
+      shooterTiltTargetPosition = gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle();
       // Check if the shooter is at speed
       final boolean isShooterAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION);
       if (isShooterAtSpeed && !shooterAtSpeedEdgeTrigger) {

@@ -60,10 +60,10 @@ public interface RobotProperties {
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
-                        put("SHORT_SHOT", new ShooterShot(45, 300, 2000));
-                        put("NORMAL_SHOT", new ShooterShot(40, 2500, 3000));
-                        put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
-                        put("YEET_SHOT", new ShooterShot(69, 5500, 5500));
+                        put("SHORT_SHOT", new ShooterShot(-45, 2000, 300));
+                        put("NORMAL_SHOT", new ShooterShot(-40, 3000, 2500));
+                        put("FAR_SHOT", new ShooterShot(-59, 4000, 4000));
+                        put("YEET_SHOT", new ShooterShot(-69, 5500, 5500));
                 }
         };
 
@@ -123,8 +123,8 @@ public interface RobotProperties {
         public static final AprilTagFieldLayout AprilTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
 
         /** PID Variables **/
-         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
-        //public static final double GYRO_KP = .015, GYRO_KI = 0.0015, GYRO_KD = -.15, GYRO_MIN = -.75, GYRO_MAX = .75;
+        public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
+        // public static final double GYRO_KP = .015, GYRO_KI = 0.0015, GYRO_KD = -.15, GYRO_MIN = -.75, GYRO_MAX = .75;
         // public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
         public static final double SLEW_KP = -.015, SLEW_KI = -0.002, SLEW_KD = .003, SLEW_PID_MIN = -.6, SLEW_PID_MAX = .75;
         public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
