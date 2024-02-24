@@ -162,8 +162,8 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Vision Controller Init
     visionController = new VisionController();
-    visionController.shuffleboardTabInit("FRONT_TARGETING_CAMERA", "Front Cameras");
-    visionController.shuffleboardTabInit("REAR_TARGETING_CAMERA", "Rear Cameras");
+    // visionController.shuffleboardTabInit("FRONT_TARGETING_CAMERA", "Front Cameras");
+    // visionController.shuffleboardTabInit("REAR_TARGETING_CAMERA", "Rear Cameras");
 
     // Global Variable Init
     fieldOrientationChosen = false;
@@ -224,7 +224,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     // Put the values on Shuffleboard
-    SmartDashboard.putString("Gyro", String.format("%.2f\u00B0", gyroValue));
+    SmartDashboard.putString("Gyro", String.format("%.2f\u00B0 | %.2f\u00B0", gyroValue, gyroPIDController.getSensorLockValue()));
 
     // Colors Sensor Values
     final int red = upperFeedColorSensor.getBlue(), green = upperFeedColorSensor.getGreen(), blue = upperFeedColorSensor.getBlue();
@@ -250,12 +250,6 @@ public class Robot extends TimedRobot implements RobotProperties {
       // Shooter Values
       SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
 
-      visionController.smartdashboard(PHOTON_CAMERAS_CONFIGS.get("FRONT_TARGETING_CAMERA").getCAMERA_NAME());
-      PhotonTrackedTarget frontTargetingCameraBestTarget = visionController.getCameraBestTarget("FRONT_TARGETING_CAMERA");
-      if (frontTargetingCameraBestTarget != null) {
-        SmartDashboard.putString("Front Targeting Camera Tracking Angle:",
-            String.format("%.2f", Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw())));
-      }
       swerveDrive.SmartDashboard();
     }
 
@@ -465,7 +459,9 @@ public class Robot extends TimedRobot implements RobotProperties {
       if (driveControllerState.getPOV() != -1) {
         gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(driveControllerState.getPOV()));
       }
-      swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
+
+      final boolean closeEnough = Math.abs(Get_Gyro_Displacement(gyroValue, gyroPIDController.getSensorLockValue())) <= 1;
+      swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? (closeEnough ? 0 : gyroPIDController.getPIDValue()) : 0, boostMode);
     }
 
     // Arm Controls

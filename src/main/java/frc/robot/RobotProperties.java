@@ -31,7 +31,7 @@ public interface RobotProperties {
         /** Drive Variables **/
         public static final boolean FIELD_ORIENTED_SWERVE = true;
         public static final double JOYSTICK_DEADZONE = .08;
-        public static final double MAX_DRIVE_SPEED = 1, MAX_ROTATION_SPEED = .6;
+        public static final double MAX_DRIVE_SPEED = .75, MAX_ROTATION_SPEED = .6;
         public static final boolean PINWHEEL_ZERO_ORIENTATION = true;
         public static final boolean SWERVE_UNIT_ORIENTATION_OPTIMIZATION = true;
 
@@ -123,8 +123,10 @@ public interface RobotProperties {
         public static final AprilTagFieldLayout AprilTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
 
         /** PID Variables **/
-        public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
-        public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_KF = 0, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
+         public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
+        //public static final double GYRO_KP = .015, GYRO_KI = 0.0015, GYRO_KD = -.15, GYRO_MIN = -.75, GYRO_MAX = .75;
+        // public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
+        public static final double SLEW_KP = -.015, SLEW_KI = -0.002, SLEW_KD = .003, SLEW_PID_MIN = -.6, SLEW_PID_MAX = .75;
         public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
         public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
 
