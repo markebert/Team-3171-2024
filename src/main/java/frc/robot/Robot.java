@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import java.util.HashMap;
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -14,6 +15,8 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.DriverStation;
 
 // CTRE Imports
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -29,6 +32,7 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
+import frc.team3171.models.PhotonAprilTagTarget;
 import frc.team3171.models.ShooterShot;
 import frc.team3171.models.XboxControllerState;
 import frc.team3171.operator.Shooter;
@@ -439,10 +443,78 @@ public class Robot extends TimedRobot implements RobotProperties {
       // April Tag Target Locking
       gyroPIDController.enablePID();
 
-      final PhotonTrackedTarget frontTargetingCameraBestTarget = visionController.getCameraBestTarget("FRONT_TARGETING_CAMERA");
-      if (frontTargetingCameraBestTarget != null) {
+      // Aquire Targets
+      var aprilTagTargets = visionController.getAllVisibleAprilTags("FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
+      PhotonAprilTagTarget trackedTarget, ampTarget, feedTarget;
+      double offset = 0;
+      switch (DriverStation.getAlliance().get()) {
+        case Red:
+          // Target april tag 4 first, else tag 3
+          trackedTarget = aprilTagTargets.get(4);
+          if (trackedTarget == null) {
+            trackedTarget = aprilTagTargets.get(3);
+            offset = -5;
+          }
+
+          // AMP Tracking
+          ampTarget = aprilTagTargets.get(5);
+          if (trackedTarget == null) {
+            // Track amp if nothing else is seen
+            trackedTarget = ampTarget;
+          } else if (ampTarget != null && trackedTarget.getPHOTON_TRACKED_TARGET().getArea() < ampTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+            trackedTarget = ampTarget;
+          }
+
+          // Feed tracking
+          feedTarget = aprilTagTargets.get(9);
+          if (feedTarget == null) {
+            feedTarget = aprilTagTargets.get(10);
+          }
+
+          if (feedTarget != null) {
+            if (trackedTarget == null) {
+              trackedTarget = feedTarget;
+            } else if (feedTarget.getPHOTON_TRACKED_TARGET().getArea() > trackedTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+              trackedTarget = feedTarget;
+            }
+          }
+          break;
+        default:
+          // Target april tag 7 first, else tag 8
+          trackedTarget = aprilTagTargets.get(7);
+          if (trackedTarget == null) {
+            trackedTarget = aprilTagTargets.get(8);
+            offset = -5;
+          }
+
+          // AMP Tracking
+          ampTarget = aprilTagTargets.get(6);
+          if (trackedTarget == null) {
+            // Track amp if nothing else is seen
+            trackedTarget = ampTarget;
+          } else if (ampTarget != null && trackedTarget.getPHOTON_TRACKED_TARGET().getArea() < ampTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+            trackedTarget = ampTarget;
+          }
+
+          // Feed tracking
+          feedTarget = aprilTagTargets.get(1);
+          if (feedTarget == null) {
+            feedTarget = aprilTagTargets.get(2);
+          }
+
+          if (feedTarget != null) {
+            if (trackedTarget == null) {
+              trackedTarget = feedTarget;
+            } else if (feedTarget.getPHOTON_TRACKED_TARGET().getArea() > trackedTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+              trackedTarget = feedTarget;
+            }
+          }
+          break;
+      }
+
+      if (trackedTarget != null) {
         // Adjust the gyro lock to point torwards the target
-        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + frontTargetingCameraBestTarget.getYaw()));
+        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + trackedTarget.getPHOTON_TRACKED_TARGET().getYaw() + offset));
       }
 
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
