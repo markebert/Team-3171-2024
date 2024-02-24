@@ -522,6 +522,10 @@ public class Shooter implements RobotProperties {
         tiltSpeed = 0;
     }
 
+    public double getShooterTiltSetPosition() {
+        return shooterTiltPIDController.getSensorLockValue();
+    }
+
     public void setShooterTiltSpeed(final double speed) {
         shooterTiltPIDController.disablePID();
         tiltSpeed = speed;

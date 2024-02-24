@@ -85,7 +85,6 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Global Variables
   private boolean fieldOrientationChosen;
   private double shooterAtSpeedStartTime;
-  private double shooterTiltTargetPosition;
 
   // Edge Triggers
   private boolean zeroEdgeTrigger;
@@ -168,7 +167,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Global Variable Init
     fieldOrientationChosen = false;
     shooterAtSpeedStartTime = 0;
-    shooterTiltTargetPosition = 0;
 
     // Edge Triggers Init
     zeroEdgeTrigger = false;
@@ -401,7 +399,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Global Variable reset
     fieldOrientationChosen = false;
     shooterAtSpeedStartTime = 0;
-    shooterTiltTargetPosition = 0;
 
     // Edge Triggers reset
     zeroEdgeTrigger = false;
@@ -495,7 +492,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
       // Force the shooter down
-      shooterTiltTargetPosition = 70;
+      shooterController.setShooterTiltPosition(70);
     }
   }
 
@@ -534,18 +531,17 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Shooter Control
     final boolean shooterTiltWithinRange = Math
-        .abs(Get_Gyro_Displacement(shooterController.getShooterTilt(), shooterTiltTargetPosition)) < SHOOTER_TILT_ALLOWED_DEVIATION;
+        .abs(Get_Gyro_Displacement(shooterController.getShooterTilt(), shooterController.getShooterTiltSetPosition())) < SHOOTER_TILT_ALLOWED_DEVIATION;
     if (button_Shooter && !shooterButtonEdgeTrigger) {
       // Shooter Start
       shooterAtSpeedEdgeTrigger = false;
       if (selectedShot != null) {
-        shooterTiltTargetPosition = gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle();
         shooterController.setShooterVelocity(selectedShot.lowerShooterRPM, selectedShot.upperShooterRPM);
       } else {
         shooterController.setShooterSpeed(1);
       }
     } else if (button_Shooter) {
-      shooterTiltTargetPosition = gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle();
+      shooterController.setShooterTiltPosition(gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle());
       // Check if the shooter is at speed
       final boolean isShooterAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION);
       if (isShooterAtSpeed && !shooterAtSpeedEdgeTrigger) {
@@ -569,11 +565,11 @@ public class Robot extends TimedRobot implements RobotProperties {
       // Ring Pickup Controls
       if (button_Pickup && !pickupEdgeTrigger) {
         // Pickup controls start
-        shooterTiltTargetPosition = 0;
+        shooterController.setShooterTiltPosition(0);
         shooterController.setShooterSpeed(0);
       } else if (button_Pickup) {
         // Pickup controls while held
-        shooterTiltTargetPosition = 0;
+        shooterController.setShooterTiltPosition(0);
         if (shooterTiltWithinRange) {
           if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
             shooterController.setLowerFeederSpeed(0);
@@ -591,7 +587,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         shooterController.setLowerFeederSpeed(0);
         shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
       } else if (button_Reverse_Feed) {
-        shooterTiltTargetPosition = gyroValue < -45 || gyroValue > 135 ? -40 : 40;
+        shooterController.setShooterTiltPosition(gyroValue < -45 || gyroValue > 135 ? -40 : 40);
         shooterController.setShooterSpeed(SHOOTER_REVERSE_FEED_SPEED);
         shooterController.setLowerFeederSpeed(0);
         if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
@@ -610,9 +606,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Manual Tilt Controls
     if (leftStickY != 0) {
       shooterController.setShooterTiltSpeed(leftStickY / 4);
-      shooterTiltTargetPosition = shooterController.getShooterTilt();
     } else {
-      shooterController.setShooterTiltPosition(shooterTiltTargetPosition);
+      shooterController.setShooterTiltPosition();
     }
 
     // Edge Trigger Updates
