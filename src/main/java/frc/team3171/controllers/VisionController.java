@@ -36,7 +36,6 @@ public class VisionController implements RobotProperties {
         PHOTON_CAMERAS_CONFIGS.forEach((photonCameraName, photonCameraConfig) -> {
             PHOTON_CAMERAS.put(photonCameraName, new PhotonCamera(photonCameraConfig.getCAMERA_NAME()));
         });
-
     }
 
     public PhotonTrackedTarget getCameraBestTarget(final String photonCameraName) {
@@ -106,6 +105,44 @@ public class VisionController implements RobotProperties {
             }
         }
         return targetData;
+    }
+
+    public PhotonAprilTagTarget getAllVisibleAprilTagsByPriority(final int[] preferedFiducialIdOrder, final String... photonCameraNames) {
+        final HashMap<Integer, PhotonAprilTagTarget> targetData = new HashMap<Integer, PhotonAprilTagTarget>();
+        // Query all cameras for aprils tags
+        for (String photonCameraName : photonCameraNames) {
+            PhotonCamera photonCamera = PHOTON_CAMERAS.get(photonCameraName);
+            if (photonCamera != null) {
+                if (photonCamera.isConnected()) {
+                    PhotonPipelineResult result = photonCamera.getLatestResult();
+                    if (result.hasTargets()) {
+                        result.targets.forEach((target) -> {
+                            PhotonAprilTagTarget existingTarget = targetData.get(target.getFiducialId());
+                            if (existingTarget != null) {
+                                if (target.getArea() > existingTarget.getPHOTON_TRACKED_TARGET().getArea()) {
+                                    targetData.put(target.getFiducialId(), new PhotonAprilTagTarget(photonCameraName, target));
+                                }
+                            } else {
+                                targetData.put(target.getFiducialId(), new PhotonAprilTagTarget(photonCameraName, target));
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        PhotonAprilTagTarget preferedTarget = null;
+        for (int fiducialId : preferedFiducialIdOrder) {
+            PhotonAprilTagTarget currentTarget = targetData.get(fiducialId);
+            if (preferedTarget == null && currentTarget != null) {
+                preferedTarget = currentTarget;
+            } else if (currentTarget != null) {
+                preferedTarget = preferedTarget.getPHOTON_TRACKED_TARGET().getArea() < currentTarget.getPHOTON_TRACKED_TARGET().getArea() ? currentTarget
+                        : preferedTarget;
+            }
+        }
+
+        return preferedTarget;
     }
 
     public void shuffleboardTabInit(final String photonCameraName, final String tabName) {

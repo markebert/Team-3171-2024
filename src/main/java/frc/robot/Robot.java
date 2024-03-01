@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import java.util.HashMap;
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -15,7 +14,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.DriverStation;
 
 // CTRE Imports
@@ -26,9 +24,6 @@ import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
-
-// Photon Vision Imports
-import org.photonvision.targeting.PhotonTrackedTarget;
 
 // Team 3171 Imports
 import frc.team3171.drive.SwerveDrive;
@@ -87,7 +82,10 @@ public class Robot extends TimedRobot implements RobotProperties {
   private VisionController visionController;
 
   // Global Variables
-  private boolean fieldOrientationChosen;
+  private XboxControllerState driveControllerState, operatorControllerState;
+  private double gyroValue;
+  private boolean robotOffGround;
+  private volatile boolean fieldOrientationFlipped;
   private double shooterAtSpeedStartTime;
 
   // Edge Triggers
@@ -124,7 +122,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     colorMatcher.addColorMatch(RING_COLOR_ONE);
 
     // PID Controllers
-    gyroPIDController = new ThreadedPIDController(() -> Normalize_Gryo_Value(gyro.getAngle()), GYRO_KP, GYRO_KI, GYRO_KD, GYRO_MIN, GYRO_MAX, false);
+    gyroPIDController = new ThreadedPIDController(() -> Normalize_Gryo_Value(gyro.getAngle() + (fieldOrientationFlipped ? 180 : 0)), GYRO_KP, GYRO_KI, GYRO_KD,
+        GYRO_MIN, GYRO_MAX, false);
     gyroPIDController.setMinValue(-180);
     gyroPIDController.setMaxValue(180);
     gyroPIDController.start();
@@ -169,7 +168,10 @@ public class Robot extends TimedRobot implements RobotProperties {
     // visionController.shuffleboardTabInit("REAR_TARGETING_CAMERA", "Rear Cameras");
 
     // Global Variable Init
-    fieldOrientationChosen = false;
+    driveControllerState = new XboxControllerState();
+    operatorControllerState = new XboxControllerState();
+    gyroValue = 0;
+    fieldOrientationFlipped = false;
     shooterAtSpeedStartTime = 0;
 
     // Edge Triggers Init
@@ -181,52 +183,21 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   @Override
   public void robotPeriodic() {
-    // Gyro Value
-    final double gyroValue = gyroPIDController.getSensorValue();
+    // Update the controller states
+    driveControllerState = driveController.isConnected() ? new XboxControllerState(driveController) : new XboxControllerState();
+    operatorControllerState = operatorController.isConnected() ? new XboxControllerState(operatorController) : new XboxControllerState();
+
+    // Update Gyro Value
+    gyroValue = gyroPIDController.getSensorValue();
+    robotOffGround = Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5;
 
     // Field Orientation Chooser
-    final Boolean fieldOrientationBoolean = fieldOrientationChooser.getSelected();
-    // Until a valid option is choosen leave the gyro orientation alone
-    if (fieldOrientationBoolean != null && !fieldOrientationChosen) {
-      // Prevents the field orientation from being changed until a reboot
-      fieldOrientationChosen = true;
-      // If the selected option is true then flip the orientation 180 degrees
-      if (fieldOrientationBoolean.booleanValue()) {
-        gyro.setYaw(Normalize_Gryo_Value(gyroValue + 180));
-        SmartDashboard.putBoolean("Flipped", true);
-      } else {
-        // Else don't flip the field orientation
-        SmartDashboard.putBoolean("Flipped", false);
-      }
-    }
-
-    // Driver Controller Info
-    double leftStickX, leftStickY, rightStickX, leftStickAngle, leftStickMagnitude, fieldCorrectedAngle;
-    if (driveController.isConnected()) {
-      // Get the controller values
-      leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveController.getLeftX());
-      leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveController.getLeftY());
-      rightStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveController.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
-
-      // Calculate the left stick angle and magnitude
-      leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
-      leftStickMagnitude = Math.sqrt(Math.pow(leftStickX, 2) + Math.pow(leftStickY, 2));
-      if (leftStickMagnitude > 1.0) {
-        leftStickMagnitude = 1;
-      }
-
-      fieldCorrectedAngle = Normalize_Gryo_Value(leftStickAngle - gyroValue);
-    } else {
-      leftStickX = 0;
-      leftStickY = 0;
-      leftStickAngle = 0;
-      leftStickMagnitude = 0;
-      rightStickX = 0;
-      fieldCorrectedAngle = 0;
-    }
+    fieldOrientationFlipped = fieldOrientationChooser.getSelected().booleanValue();
+    SmartDashboard.putBoolean("Flipped", fieldOrientationFlipped);
 
     // Put the values on Shuffleboard
     SmartDashboard.putString("Gyro", String.format("%.2f\u00B0 | %.2f\u00B0", gyroValue, gyroPIDController.getSensorLockValue()));
+    SmartDashboard.putBoolean("Off Ground:", robotOffGround);
 
     // Colors Sensor Values
     final int red = upperFeedColorSensor.getBlue(), green = upperFeedColorSensor.getGreen(), blue = upperFeedColorSensor.getBlue();
@@ -242,16 +213,29 @@ public class Robot extends TimedRobot implements RobotProperties {
     SmartDashboard.putString("Shooter Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
 
     if (DEBUG) {
+      // Get the needed joystick values after calculating the deadzones
+      final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
+      final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
+      final double rightStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
+
+      // Calculate the left stick angle and magnitude
+      final double leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
+      double leftStickMagnitude = Math.sqrt(Math.pow(leftStickX, 2) + Math.pow(leftStickY, 2));
+      leftStickMagnitude = leftStickMagnitude > 1 ? 1 : leftStickMagnitude;
+
+      // Calculate the field corrected drive angle
+      final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
+
       // Operator Controller Values
-      SmartDashboard.putString("Left Stick Y", String.format("%.2f", leftStickY));
-      SmartDashboard.putString("Right Stick X", String.format("%.2f", rightStickX));
       SmartDashboard.putString("Left Stick Angle", String.format("%.2f\u00B0", leftStickAngle));
       SmartDashboard.putString("Left Stick Velocity", String.format("%.2f", leftStickMagnitude));
+      SmartDashboard.putString("Right Stick X", String.format("%.2f", rightStickX));
       SmartDashboard.putString("Field Adjusted Angle", String.format("%.2f\u00B0", fieldCorrectedAngle));
 
       // Shooter Values
       SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
 
+      // Swerve Values
       swerveDrive.SmartDashboard();
     }
 
@@ -335,10 +319,6 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   @Override
   public void teleopPeriodic() {
-    // Get the controller states
-    final XboxControllerState driveControllerState = new XboxControllerState(driveController);
-    final XboxControllerState operatorControllerState = new XboxControllerState(operatorController);
-
     // Robot drive controls
     driveControlsPeriodic(driveControllerState);
     operatorControlsPeriodic(operatorControllerState);
@@ -363,6 +343,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Disable all controllers
     swerveDrive.disable();
     gyroPIDController.disablePID();
+    leftAcuator.disable();
+    rightAcuator.disable();
     shooterController.disable();
 
     // Once auton recording is done, save the data to a file, if there is any
@@ -401,7 +383,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     gyroPIDController.updateSensorLockValue();
 
     // Global Variable reset
-    fieldOrientationChosen = false;
     shooterAtSpeedStartTime = 0;
 
     // Edge Triggers reset
@@ -412,9 +393,6 @@ public class Robot extends TimedRobot implements RobotProperties {
   }
 
   private void driveControlsPeriodic(final XboxControllerState driveControllerState) {
-    // Gyro Value
-    final double gyroValue = gyroPIDController.getSensorValue();
-
     // Get the needed joystick values after calculating the deadzones
     final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
     final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
@@ -422,8 +400,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Calculate the left stick angle and magnitude
     final double leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
-    double leftStickMagnitude;
-    leftStickMagnitude = Math.sqrt(Math.pow(leftStickX, 2) + Math.pow(leftStickY, 2));
+    double leftStickMagnitude = Math.sqrt(Math.pow(leftStickX, 2) + Math.pow(leftStickY, 2));
     leftStickMagnitude = leftStickMagnitude > 1 ? 1 : leftStickMagnitude;
 
     // Calculate the field corrected drive angle
@@ -433,8 +410,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     final boolean boostMode = driveControllerState.getXButton();
     final boolean targetLocking = driveControllerState.getAButton();
     final boolean pickupLocking = driveControllerState.getBButton();
-    final boolean robotOffGround = Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5;
-    SmartDashboard.putBoolean("Off Ground:", robotOffGround);
     if (rightStickX != 0 || robotOffGround) {
       // Manual turning
       gyroPIDController.disablePID();
@@ -444,77 +419,24 @@ public class Robot extends TimedRobot implements RobotProperties {
       gyroPIDController.enablePID();
 
       // Aquire Targets
-      var aprilTagTargets = visionController.getAllVisibleAprilTags("FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
-      PhotonAprilTagTarget trackedTarget, ampTarget, feedTarget;
-      double offset = 0;
+      final PhotonAprilTagTarget aprilTagTarget;
+      final double offset;
       switch (DriverStation.getAlliance().get()) {
         case Red:
-          // Target april tag 4 first, else tag 3
-          trackedTarget = aprilTagTargets.get(4);
-          if (trackedTarget == null) {
-            trackedTarget = aprilTagTargets.get(3);
-            offset = -5;
-          }
-
-          // AMP Tracking
-          ampTarget = aprilTagTargets.get(5);
-          if (trackedTarget == null) {
-            // Track amp if nothing else is seen
-            trackedTarget = ampTarget;
-          } else if (ampTarget != null && trackedTarget.getPHOTON_TRACKED_TARGET().getArea() < ampTarget.getPHOTON_TRACKED_TARGET().getArea()) {
-            trackedTarget = ampTarget;
-          }
-
-          // Feed tracking
-          feedTarget = aprilTagTargets.get(9);
-          if (feedTarget == null) {
-            feedTarget = aprilTagTargets.get(10);
-          }
-
-          if (feedTarget != null) {
-            if (trackedTarget == null) {
-              trackedTarget = feedTarget;
-            } else if (feedTarget.getPHOTON_TRACKED_TARGET().getArea() > trackedTarget.getPHOTON_TRACKED_TARGET().getArea()) {
-              trackedTarget = feedTarget;
-            }
-          }
+          // Target priority: 4, 3 w/ -5 offset, 5, 9 or 10
+          aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 4, 3, 5, 9, 10 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
+          offset = aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 3 ? -5 : 0;
           break;
         default:
-          // Target april tag 7 first, else tag 8
-          trackedTarget = aprilTagTargets.get(7);
-          if (trackedTarget == null) {
-            trackedTarget = aprilTagTargets.get(8);
-            offset = -5;
-          }
-
-          // AMP Tracking
-          ampTarget = aprilTagTargets.get(6);
-          if (trackedTarget == null) {
-            // Track amp if nothing else is seen
-            trackedTarget = ampTarget;
-          } else if (ampTarget != null && trackedTarget.getPHOTON_TRACKED_TARGET().getArea() < ampTarget.getPHOTON_TRACKED_TARGET().getArea()) {
-            trackedTarget = ampTarget;
-          }
-
-          // Feed tracking
-          feedTarget = aprilTagTargets.get(1);
-          if (feedTarget == null) {
-            feedTarget = aprilTagTargets.get(2);
-          }
-
-          if (feedTarget != null) {
-            if (trackedTarget == null) {
-              trackedTarget = feedTarget;
-            } else if (feedTarget.getPHOTON_TRACKED_TARGET().getArea() > trackedTarget.getPHOTON_TRACKED_TARGET().getArea()) {
-              trackedTarget = feedTarget;
-            }
-          }
+          // Target priority: 7, 8 w/ -5 offset, 6, 1 or 2
+          aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 7, 8, 6, 1, 2 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
+          offset = aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 8 ? -5 : 0;
           break;
       }
 
-      if (trackedTarget != null) {
+      if (aprilTagTarget != null) {
         // Adjust the gyro lock to point torwards the target
-        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + trackedTarget.getPHOTON_TRACKED_TARGET().getYaw() + offset));
+        gyroPIDController.updateSensorLockValueWithoutReset(Normalize_Gryo_Value(gyroValue + aprilTagTarget.getPHOTON_TRACKED_TARGET().getYaw() + offset));
       }
 
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? gyroPIDController.getPIDValue() : 0, boostMode);
@@ -535,42 +457,22 @@ public class Robot extends TimedRobot implements RobotProperties {
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? (closeEnough ? 0 : gyroPIDController.getPIDValue()) : 0, boostMode);
     }
 
-    // Arm Controls
+    // Lift Controls
     final boolean raiseLeftArm = driveControllerState.getLeftBumper();
     final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
-    if (raiseLeftArm) {
-      // Raise Left Arm
-      leftAcuator.set(1);
-    } else if (lowerLeftArm) {
-      // Lower Left Arm
-      leftAcuator.set(-1);
-    } else {
-      // Disable Left Arm
-      leftAcuator.set(0);
-    }
+    leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
 
     final boolean raiseRightArm = driveControllerState.getRightBumper();
     final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
-    if (raiseRightArm) {
-      // Raise Right Arm
-      rightAcuator.set(1);
-    } else if (lowerRightArm) {
-      // Lower Right Arm
-      rightAcuator.set(-1);
-    } else {
-      // Disable Right Arm
-      rightAcuator.set(0);
-    }
+    rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
 
     if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
       // Force the shooter down
-      shooterController.setShooterTiltPosition(70);
+      shooterController.setShooterTiltPosition(shooterController.getShooterTilt() > 0 ? 70 : -70);
     }
   }
 
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
-    final double gyroValue = gyroPIDController.getSensorValue();
-
     // Get the needed joystick values after calculating the deadzones
     final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
 

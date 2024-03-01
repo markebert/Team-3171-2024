@@ -43,6 +43,7 @@ public class Shooter implements RobotProperties {
     private final ThreadedPIDController lowerShooterPIDController, upperShooterPIDController;
     private final ThreadedPIDController shooterTiltPIDController;
 
+    // Variables
     private double lowerShooterSpeed = 0, upperShooterSpeed = 0;
 
     // Executor Service
