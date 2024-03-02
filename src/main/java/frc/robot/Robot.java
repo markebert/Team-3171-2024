@@ -143,7 +143,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // Field Orientation Chooser
     fieldOrientationChooser = new SendableChooser<>();
-    fieldOrientationChooser.setDefaultOption("Pick an option", null);
+    fieldOrientationChooser.setDefaultOption("Pick an option", false);
     fieldOrientationChooser.addOption("0\u00B0", false);
     fieldOrientationChooser.addOption("180\u00B0", true);
     SmartDashboard.putData("Field Orientation Chooser", fieldOrientationChooser);
@@ -410,7 +410,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
 
     // Drive Controls
-    final boolean boostMode = driveControllerState.getXButton();
+    final boolean boostMode = driveControllerState.getYButton();
     final boolean targetLocking = driveControllerState.getAButton();
     final boolean pickupLocking = driveControllerState.getBButton();
     if (rightStickX != 0 || robotOffGround) {
@@ -428,12 +428,12 @@ public class Robot extends TimedRobot implements RobotProperties {
         case Red:
           // Target priority: 4, 3 w/ -5 offset, 5, 9 or 10
           aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 4, 3, 5, 9, 10 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
-          offset = aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 3 ? -5 : 0;
+          offset = aprilTagTarget == null ? 0 : aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 3 ? -5 : 0;
           break;
         default:
           // Target priority: 7, 8 w/ -5 offset, 6, 1 or 2
           aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 7, 8, 6, 1, 2 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
-          offset = aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 8 ? -5 : 0;
+          offset = aprilTagTarget == null ? 0 : aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 8 ? -5 : 0;
           break;
       }
 
@@ -474,7 +474,21 @@ public class Robot extends TimedRobot implements RobotProperties {
         // Force the shooter down
         shooterController.shooterTiltEndMatch();
       }
+    } else {
+      final boolean raiseLeftArm = driveControllerState.getLeftBumper();
+      final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
+      leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
+
+      final boolean raiseRightArm = driveControllerState.getRightBumper();
+      final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
+      rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
+
+      if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
+        // Force the shooter down
+        shooterController.shooterTiltEndMatch();
+      }
     }
+
   }
 
   private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
