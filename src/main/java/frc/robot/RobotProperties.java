@@ -24,7 +24,7 @@ import frc.team3171.models.ShooterShot;
 public interface RobotProperties {
 
         /** Debug Options **/
-        public static final boolean DEBUG = true;
+        public static final boolean DEBUG = false;
         public static final boolean SWERVE_DIRECTION_DEBUG = false;
         public static final String PID_LOG_ADDRESS = "10.31.71.202";
 
@@ -134,6 +134,6 @@ public interface RobotProperties {
         public static final String DEFAULT_AUTON = "Disabled";
 
         /** Auton Modes **/
-        public static final String[] AUTON_OPTIONS = { "Test 1", "Test 2", "Test 3" };
+        public static final String[] AUTON_OPTIONS = { "Left 2 Notes", "Center 2 Notes", "Right 2 Notes" };
 
 }
