@@ -210,7 +210,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         String.format("%.2f | %.2f", shooterController.getLowerShooterVelocity(), shooterController.getLowerShooterTargetVelocity()));
     SmartDashboard.putString("Upper Shooter RPM:",
         String.format("%.2f | %.2f", shooterController.getUpperShooterVelocity(), shooterController.getUpperShooterTargetVelocity()));
-    SmartDashboard.putString("Shooter Tilt:", String.format("%.2f | %.2f", shooterController.test(), shooterController.testLock()));
+    SmartDashboard.putString("Shooter Tilt:", String.format("%.2f | %.2f", shooterController.getShooterTilt(), shooterController.getShooterTiltSetPosition()));
 
     if (DEBUG) {
       // Get the needed joystick values after calculating the deadzones
@@ -381,6 +381,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     swerveDrive.driveInit();
     gyroPIDController.enablePID();
     gyroPIDController.updateSensorLockValue();
+    shooterController.shooterTiltStartMatch();
 
     // Global Variable reset
     shooterAtSpeedStartTime = 0;
@@ -458,17 +459,19 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     // Lift Controls
-    final boolean raiseLeftArm = driveControllerState.getLeftBumper();
-    final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
-    leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
+    if (DriverStation.isFMSAttached() && Timer.getMatchTime() < 30) {
+      final boolean raiseLeftArm = driveControllerState.getLeftBumper();
+      final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
+      leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
 
-    final boolean raiseRightArm = driveControllerState.getRightBumper();
-    final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
-    rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
+      final boolean raiseRightArm = driveControllerState.getRightBumper();
+      final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
+      rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
 
-    if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
-      // Force the shooter down
-      shooterController.setShooterTiltPosition(shooterController.getShooterTilt() > 0 ? 70 : -70);
+      if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
+        // Force the shooter down
+        shooterController.shooterTiltEndMatch();
+      }
     }
   }
 

@@ -1,5 +1,7 @@
 package frc.team3171.operator;
 
+import static frc.team3171.HelperFunctions.Get_Gyro_Displacement;
+
 // Java Imports
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,8 +38,6 @@ public class Shooter implements RobotProperties {
 
     // Tilt Encoder
     private final DutyCycleEncoder tiltEncoder;
-    private double tiltSpeed;
-    private boolean shooterFlipped = false;
 
     // PID Controllers
     private final ThreadedPIDController lowerShooterPIDController, upperShooterPIDController;
@@ -45,6 +45,8 @@ public class Shooter implements RobotProperties {
 
     // Variables
     private double lowerShooterSpeed = 0, upperShooterSpeed = 0;
+    private double tiltSpeed;
+    private volatile boolean shooterFlipped = false, disableShooterTilt;
 
     // Executor Service
     private final ExecutorService executorService;
@@ -128,10 +130,16 @@ public class Shooter implements RobotProperties {
                 final double currentShooterTilt = getShooterTilt();
 
                 // Shooter Tilt Update
-                final double speedValue = shooterTiltPIDController.isEnabled() ? shooterTiltPIDController.getPIDValue() : tiltSpeed;
-                final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && speedValue < 0;
-                final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && speedValue > 0;
-                shooterTiltMotor.set(lowerLimit || upperLimit ? 0 : speedValue);
+                final boolean shooterTiltWithinRange = Math
+                        .abs(Get_Gyro_Displacement(getShooterTilt(), getShooterTiltSetPosition())) < SHOOTER_TILT_ALLOWED_DEVIATION;
+                if (disableShooterTilt && shooterTiltWithinRange) {
+                    shooterTiltMotor.disable();
+                } else {
+                    final double speedValue = shooterTiltPIDController.isEnabled() ? shooterTiltPIDController.getPIDValue() : tiltSpeed;
+                    final boolean lowerLimit = currentShooterTilt < SHOOTER_TILT_MIN_POSITION && speedValue < 0;
+                    final boolean upperLimit = currentShooterTilt > SHOOTER_TILT_MAX_POSITION && speedValue > 0;
+                    shooterTiltMotor.set(lowerLimit || upperLimit ? 0 : speedValue);
+                }
 
                 // Shooter Motors Update
                 // Check if the shooter is currently flipped over, if so flip the lower and upper velocities
@@ -511,16 +519,20 @@ public class Shooter implements RobotProperties {
     }
 
     public void setShooterTiltPosition(final double position) {
-        shooterTiltPIDController.enablePID();
-        tiltSpeed = 0;
-        if (shooterTiltPIDController.getSensorLockValue() != position) {
-            shooterTiltPIDController.updateSensorLockValue(position);
+        if (!disableShooterTilt) {
+            shooterTiltPIDController.enablePID();
+            tiltSpeed = 0;
+            if (shooterTiltPIDController.getSensorLockValue() != position) {
+                shooterTiltPIDController.updateSensorLockValue(position);
+            }
         }
     }
 
     public void setShooterTiltPosition() {
-        shooterTiltPIDController.enablePID();
-        tiltSpeed = 0;
+        if (!disableShooterTilt) {
+            shooterTiltPIDController.enablePID();
+            tiltSpeed = 0;
+        }
     }
 
     public double getShooterTiltSetPosition() {
@@ -528,8 +540,19 @@ public class Shooter implements RobotProperties {
     }
 
     public void setShooterTiltSpeed(final double speed) {
-        shooterTiltPIDController.disablePID();
-        tiltSpeed = speed;
+        if (!disableShooterTilt) {
+            shooterTiltPIDController.disablePID();
+            tiltSpeed = speed;
+        }
+    }
+
+    public void shooterTiltEndMatch() {
+        setShooterTiltPosition(getShooterTilt() > 0 ? 70 : -70);
+        disableShooterTilt = true;
+    }
+
+    public void shooterTiltStartMatch() {
+        disableShooterTilt = false;
     }
 
     public double getShooterTiltRaw() {
@@ -538,14 +561,6 @@ public class Shooter implements RobotProperties {
 
     public double getShooterTilt() {
         return HelperFunctions.Normalize_Gryo_Value(getShooterTiltRaw() - SHOOTER_TILT_ZERO_POSITION);
-    }
-
-    public double test() {
-        return shooterTiltPIDController.getSensorValue();
-    }
-
-    public double testLock() {
-        return shooterTiltPIDController.getSensorLockValue();
     }
 
     /**
