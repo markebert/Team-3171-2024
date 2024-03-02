@@ -213,6 +213,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     SmartDashboard.putString("Shooter Tilt:", String.format("%.2f | %.2f", shooterController.getShooterTilt(), shooterController.getShooterTiltSetPosition()));
 
     if (DEBUG) {
+      SmartDashboard.putString("Match Time:", String.format("%.2f seconds", Timer.getMatchTime()));
+
       // Get the needed joystick values after calculating the deadzones
       final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
       final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
@@ -459,7 +461,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     // Lift Controls
-    if (DriverStation.isFMSAttached() && Timer.getMatchTime() < 30) {
+    if (DriverStation.isFMSAttached() && DriverStation.isTeleop() && Timer.getMatchTime() < 30) {
       final boolean raiseLeftArm = driveControllerState.getLeftBumper();
       final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
       leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
