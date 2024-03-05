@@ -90,9 +90,12 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Edge Triggers
   private boolean zeroEdgeTrigger;
+  private boolean modeTrigger;
   private boolean pickupEdgeTrigger;
   private boolean shooterButtonEdgeTrigger;
   private boolean shooterAtSpeedEdgeTrigger;
+
+  public static boolean FIELD_ORIENTED_SWERVE = true;
 
   @Override
   public void robotInit() {
@@ -117,7 +120,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Sensors
     gyro = new Pigeon2(GYRO_CAN_ID, "canivore");
     gyro.reset();
-    upperFeedColorSensor = new ColorSensorV3(Port.kOnboard);
+    upperFeedColorSensor = new ColorSensorV3(Port.kMXP);
     colorMatcher = new ColorMatch();
     colorMatcher.addColorMatch(RING_COLOR_ONE);
 
@@ -249,6 +252,15 @@ public class Robot extends TimedRobot implements RobotProperties {
       System.out.println("Swerve Drive has been calibrated!");
     }
     zeroEdgeTrigger = zeroTrigger;
+
+    // Mode Switch
+    final boolean modeSsitch = driveController.getStartButton();
+    if (modeSsitch && !modeTrigger) {
+      // Zero the swerve units
+      FIELD_ORIENTED_SWERVE = !FIELD_ORIENTED_SWERVE;
+    }
+    modeTrigger = modeSsitch;
+    SmartDashboard.putBoolean("Field Oriented", FIELD_ORIENTED_SWERVE);
   }
 
   @Override
@@ -427,12 +439,12 @@ public class Robot extends TimedRobot implements RobotProperties {
       switch (DriverStation.getAlliance().get()) {
         case Red:
           // Target priority: 4, 3 w/ -5 offset, 5, 9 or 10
-          aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 4, 3, 5, 9, 10 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
+          aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 4, 5, 9, 10 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
           offset = aprilTagTarget == null ? 0 : aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 3 ? -5 : 0;
           break;
         default:
           // Target priority: 7, 8 w/ -5 offset, 6, 1 or 2
-          aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 7, 8, 6, 1, 2 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
+          aprilTagTarget = visionController.getAllVisibleAprilTagsByPriority(new int[] { 7, 6, 1, 2 }, "FRONT_TARGETING_CAMERA", "REAR_TARGETING_CAMERA");
           offset = aprilTagTarget == null ? 0 : aprilTagTarget.getPHOTON_TRACKED_TARGET().getFiducialId() == 8 ? -5 : 0;
           break;
       }

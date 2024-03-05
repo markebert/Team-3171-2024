@@ -29,9 +29,8 @@ public interface RobotProperties {
         public static final String PID_LOG_ADDRESS = "10.31.71.202";
 
         /** Drive Variables **/
-        public static final boolean FIELD_ORIENTED_SWERVE = true;
         public static final double JOYSTICK_DEADZONE = .08;
-        public static final double MAX_DRIVE_SPEED = .75, MAX_ROTATION_SPEED = .6;
+        public static final double MAX_DRIVE_SPEED = .85, MAX_ROTATION_SPEED = .6;
         public static final boolean PINWHEEL_ZERO_ORIENTATION = true;
         public static final boolean SWERVE_UNIT_ORIENTATION_OPTIMIZATION = true;
 
@@ -61,9 +60,9 @@ public interface RobotProperties {
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
                         put("SHORT_SHOT", new ShooterShot(45, 300, 2000));
-                        put("NORMAL_SHOT", new ShooterShot(40, 2500, 3000));
+                        put("NORMAL_SHOT", new ShooterShot(37, 2500, 3000));
                         put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
-                        put("YEET_SHOT", new ShooterShot(69, 5500, 5500));
+                        put("YEET_SHOT", new ShooterShot(25, 5500, 5500));
                 }
         };
 
