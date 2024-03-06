@@ -59,10 +59,10 @@ public interface RobotProperties {
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
-                        put("SHORT_SHOT", new ShooterShot(40, 2000, 300));
+                        put("SHORT_SHOT", new ShooterShot(40, 2100, 400));
                         put("NORMAL_SHOT", new ShooterShot(37, 2500, 3000));
                         put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
-                        put("YEET_SHOT", new ShooterShot(25, 5500, 5500));
+                        put("YEET_SHOT", new ShooterShot(70, 2000, 2000));
                 }
         };
 
@@ -133,6 +133,6 @@ public interface RobotProperties {
         public static final String DEFAULT_AUTON = "Disabled";
 
         /** Auton Modes **/
-        public static final String[] AUTON_OPTIONS = { "Left 2 Notes", "Center 2 Notes", "Right 2 Notes" };
+        public static final String[] AUTON_OPTIONS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16" };
 
 }
