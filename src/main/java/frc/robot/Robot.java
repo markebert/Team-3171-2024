@@ -546,7 +546,14 @@ public class Robot extends TimedRobot implements RobotProperties {
         shooterController.setShooterSpeed(1);
       }
     } else if (button_Shooter) {
-      shooterController.setShooterTiltPosition(gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle());
+      switch (DriverStation.getAlliance().get()) {
+        case Red:
+          shooterController.setShooterTiltPosition(gyroValue < -135 || gyroValue > 45 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle());
+          break;
+        default:
+          shooterController.setShooterTiltPosition(gyroValue < -45 || gyroValue > 135 ? selectedShot.getShooterAngle() : -selectedShot.getShooterAngle());
+          break;
+      }
       // Check if the shooter is at speed
       final boolean isShooterAtSpeed = selectedShot == null ? true : shooterController.isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION);
       if (isShooterAtSpeed && !shooterAtSpeedEdgeTrigger) {
