@@ -592,7 +592,14 @@ public class Robot extends TimedRobot implements RobotProperties {
         shooterController.setLowerFeederSpeed(0);
         shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
       } else if (button_Reverse_Feed) {
-        shooterController.setShooterTiltPosition(gyroValue < -45 || gyroValue > 135 ? -40 : 40);
+        switch (DriverStation.getAlliance().get()) {
+          case Red:
+            shooterController.setShooterTiltPosition(gyroValue > -135 && gyroValue < 45 ? 40 : -40);
+            break;
+          default:
+            shooterController.setShooterTiltPosition(gyroValue > -45 && gyroValue < 135 ? 40 : -40);
+            break;
+        }
         shooterController.setShooterSpeed(SHOOTER_REVERSE_FEED_SPEED);
         shooterController.setLowerFeederSpeed(0);
         if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
