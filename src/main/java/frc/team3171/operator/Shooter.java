@@ -1,30 +1,25 @@
 package frc.team3171.operator;
 
-import static frc.team3171.HelperFunctions.Get_Gyro_Displacement;
-
-// Java Imports
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-// FRC Imports
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import com.revrobotics.CANSparkBase.IdleMode;
+import com.revrobotics.CANSparkFlex;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.TimedRobot;
-
-// REV Imports
-import com.revrobotics.CANSparkFlex;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkLowLevel.MotorType;
-
-// Team 3171 Imports
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.RobotProperties;
 import frc.team3171.HelperFunctions;
+import static frc.team3171.HelperFunctions.Get_Gyro_Displacement;
 import frc.team3171.controllers.ThreadedPIDController;
 
 /**
@@ -36,7 +31,8 @@ public class Shooter implements RobotProperties {
     private final CANSparkFlex lowerShooterMotor, upperShooterMotor;
     private final CANSparkMax lowerFeederMotorMaster, lowerFeederMotorFollower, upperFeederMotorMaster, upperFeederMotorFollower, shooterTiltMotor;
 
-    // Tilt Encoder
+    // Encoders
+    private final RelativeEncoder lowerShooterRelativeEncoder, upperShooterRelativeEncoder;
     private final DutyCycleEncoder tiltEncoder;
 
     // PID Controllers
@@ -59,10 +55,8 @@ public class Shooter implements RobotProperties {
 
     /**
      * Constructor
-     * 
-     * @throws Exception
-     *             Throws a new exception if there are an invalid amount of
-     *             motors in the feederCANIDArray.
+     *
+     * @throws Exception Throws a new exception if there are an invalid amount of motors in the feederCANIDArray.
      */
     public Shooter() throws Exception {
         // Init all of the motors
@@ -87,31 +81,30 @@ public class Shooter implements RobotProperties {
         lowerShooterMotor.setInverted(LOWER_SHOOTER_INVERTED);
         lowerShooterMotor.burnFlash();
 
-        lowerShooterPIDController = new ThreadedPIDController(this::getLowerShooterVelocity, SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_MIN, SHOOTER_MAX,
-                true);
-        // lowerShooterPIDController.start(20, true, lowerData);
-        lowerShooterPIDController.start(true);
-
         upperShooterMotor.restoreFactoryDefaults();
         upperShooterMotor.setIdleMode(IdleMode.kBrake);
         upperShooterMotor.setInverted(UPPER_SHOOTER_INVERTED);
         upperShooterMotor.burnFlash();
-
-        upperShooterPIDController = new ThreadedPIDController(this::getUpperShooterVelocity, SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_MIN, SHOOTER_MAX,
-                true);
-        // upperShooterPIDController.start(20, true, upperData);
-        upperShooterPIDController.start(true);
 
         shooterTiltMotor.restoreFactoryDefaults();
         shooterTiltMotor.setIdleMode(IdleMode.kBrake);
         shooterTiltMotor.setInverted(SHOOTER_TILT_INVERTED);
         shooterTiltMotor.burnFlash();
 
+        // Encoder Init
+        lowerShooterRelativeEncoder = lowerShooterMotor.getEncoder();
+        upperShooterRelativeEncoder = upperShooterMotor.getEncoder();
         tiltEncoder = new DutyCycleEncoder(SHOOTER_TILT_ID);
 
+        lowerShooterPIDController = new ThreadedPIDController(this::getLowerShooterVelocity, SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_MIN, SHOOTER_MAX, true);
+        lowerShooterPIDController.start(true);
+
+        upperShooterPIDController = new ThreadedPIDController(this::getUpperShooterVelocity, SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_MIN, SHOOTER_MAX, true);
+        upperShooterPIDController.start(true);
+
         shooterTiltPIDController = new ThreadedPIDController(this::getShooterTilt, TILT_KP, TILT_KI, TILT_KD, TILT_MIN, TILT_MAX, false);
-        shooterTiltPIDController.setMinValue(-180);
-        shooterTiltPIDController.setMaxValue(180);
+        shooterTiltPIDController.setMinSensorValue(-180);
+        shooterTiltPIDController.setMaxSensorValue(180);
         shooterTiltPIDController.start(false);
 
         // Initialize the executor service for concurrency
@@ -130,8 +123,7 @@ public class Shooter implements RobotProperties {
                 final double currentShooterTilt = getShooterTilt();
 
                 // Shooter Tilt Update
-                final boolean shooterTiltWithinRange = Math
-                        .abs(Get_Gyro_Displacement(getShooterTilt(), getShooterTiltSetPosition())) < SHOOTER_TILT_ALLOWED_DEVIATION;
+                final boolean shooterTiltWithinRange = Math.abs(Get_Gyro_Displacement(getShooterTilt(), getShooterTiltSetPosition())) < SHOOTER_TILT_ALLOWED_DEVIATION;
                 if (disableShooterTilt && shooterTiltWithinRange) {
                     shooterTiltMotor.disable();
                 } else {
@@ -142,7 +134,8 @@ public class Shooter implements RobotProperties {
                 }
 
                 // Shooter Motors Update
-                // Check if the shooter is currently flipped over, if so flip the lower and upper velocities
+                // Check if the shooter is currently flipped over, if so flip the lower and
+                // upper velocities
                 if (currentShooterTilt < 0 && !shooterFlipped) {
                     shooterFlipped = true;
                     setShooterVelocity((int) upperShooterPIDController.getSensorLockValue(), (int) lowerShooterPIDController.getSensorLockValue(), true);
@@ -171,13 +164,9 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the speed of the shooter motors to the given value.
-     * 
-     * @param lowerShooterSpeed
-     *            The speed, from -1.0 to 1.0, to set the lower
-     *            shooter motor to.
-     * @param upperShooterSpeed
-     *            The speed, from -1.0 to 1.0, to set the upper
-     *            shooter motor to.
+     *
+     * @param lowerShooterSpeed The speed, from -1.0 to 1.0, to set the lower shooter motor to.
+     * @param upperShooterSpeed The speed, from -1.0 to 1.0, to set the upper shooter motor to.
      */
     public void setShooterSpeed(final double lowerShooterSpeed, final double upperShooterSpeed) {
         lowerShooterPIDController.disablePID();
@@ -189,10 +178,8 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the speed of the shooter motors to the given value.
-     * 
-     * @param shooterSpeed
-     *            The speed, from -1.0 to 1.0, to set the all of the
-     *            shooter motors to.
+     *
+     * @param shooterSpeed The speed, from -1.0 to 1.0, to set the all of the shooter motors to.
      */
     public void setShooterSpeed(final double shooterSpeed) {
         setShooterSpeed(shooterSpeed, shooterSpeed);
@@ -200,16 +187,13 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the RPM of the shooter motors to the given value.
-     * 
-     * @param lowerShooterTargetRPM
-     *            The RPM to set the lower shooter motor to.
-     * @param upperShooterTargetRPM
-     *            The RPM to set the upper shooter motor to.
+     *
+     * @param lowerShooterTargetRPM The RPM to set the lower shooter motor to.
+     * @param upperShooterTargetRPM The RPM to set the upper shooter motor to.
      */
     private void setShooterVelocity(final int lowerShooterTargetRPM, final int upperShooterTargetRPM, final boolean withoutReset) {
         /**
-         * First check if either desired RPM is 0, if so lets the electronic brake
-         * handle the slow done rather then the PID Controller.
+         * First check if either desired RPM is 0, if so lets the electronic brake handle the slow done rather then the PID Controller.
          */
         if (lowerShooterTargetRPM == 0) {
             lowerShooterPIDController.disablePID();
@@ -242,11 +226,9 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the RPM of the shooter motors to the given value.
-     * 
-     * @param lowerShooterTargetRPM
-     *            The RPM to set the lower shooter motor to.
-     * @param upperShooterTargetRPM
-     *            The RPM to set the upper shooter motor to.
+     *
+     * @param lowerShooterTargetRPM The RPM to set the lower shooter motor to.
+     * @param upperShooterTargetRPM The RPM to set the upper shooter motor to.
      */
     public void setShooterVelocity(int lowerShooterTargetRPM, int upperShooterTargetRPM) {
         if (shooterFlipped) {
@@ -259,33 +241,27 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the RPM of the shooter motors to the given value.
-     * 
-     * @param shooterRPM
-     *            The RPM to set the all of the shooter motors to.
+     *
+     * @param shooterRPM The RPM to set the all of the shooter motors to.
      */
     public void setShooterVelocity(final int shooterRPM) {
         setShooterVelocity(shooterRPM, shooterRPM);
     }
 
     /**
-     * Returns the velocity of the lower shooter motor in RPM, converted from Units
-     * per 100ms.
-     * 
+     * Returns the velocity of the lower shooter motor in RPM, converted from Units per 100ms.
+     *
      * @return The RPM of the lower shooter motor.
      */
     public double getLowerShooterVelocity() {
-        return lowerShooterMotor.getEncoder().getVelocity();
+        return lowerShooterRelativeEncoder.getVelocity();
     }
 
     /**
-     * Returns if the velocity of the motor is within the provided percent error
-     * margin.
-     * 
-     * @param percentError
-     *            The percent error, from 0.0 to 1.0 with 1.0 being
-     *            equivilent to 100%, allowed to be considered at velocity.
-     * @return true if the motors current velocity is within the given percent
-     *         error, false otherwise.
+     * Returns if the velocity of the motor is within the provided percent error margin.
+     *
+     * @param percentError The percent error, from 0.0 to 1.0 with 1.0 being equivilent to 100%, allowed to be considered at velocity.
+     * @return true if the motors current velocity is within the given percent error, false otherwise.
      */
     public boolean isLowerShooterAtVelocity(double percentError) {
         percentError = Math.abs(percentError);
@@ -296,24 +272,19 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Returns the velocity of the upper shooter motor in RPM, converted from Units
-     * per 100ms.
-     * 
+     * Returns the velocity of the upper shooter motor in RPM, converted from Units per 100ms.
+     *
      * @return The RPM of the upper shooter motor.
      */
     public double getUpperShooterVelocity() {
-        return upperShooterMotor.getEncoder().getVelocity();
+        return upperShooterRelativeEncoder.getVelocity();
     }
 
     /**
-     * Returns if the velocity of the motor is within the provided percent error
-     * margin.
-     * 
-     * @param percentError
-     *            The percent error, from 0.0 to 1.0 with 1.0 being
-     *            equivilent to 100%, allowed to be considered at velocity.
-     * @return true if the motors current velocity is within the given percent
-     *         error, false otherwise.
+     * Returns if the velocity of the motor is within the provided percent error margin.
+     *
+     * @param percentError The percent error, from 0.0 to 1.0 with 1.0 being equivilent to 100%, allowed to be considered at velocity.
+     * @return true if the motors current velocity is within the given percent error, false otherwise.
      */
     public boolean isUpperShooterAtVelocity(double percentError) {
         percentError = Math.abs(percentError);
@@ -324,9 +295,8 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Returns the target velocity of the lower shooter motor in RPM, converted from
-     * Units per 100ms.
-     * 
+     * Returns the target velocity of the lower shooter motor in RPM, converted from Units per 100ms.
+     *
      * @return The target RPM of the lower shooter motor.
      */
     public double getLowerShooterTargetVelocity() {
@@ -334,9 +304,8 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Returns the target velocity of the upper shooter motor in RPM, converted from
-     * Units per 100ms.
-     * 
+     * Returns the target velocity of the upper shooter motor in RPM, converted from Units per 100ms.
+     *
      * @return The RPM of the upper shooter motor.
      */
     public double getUpperShooterTargetVelocity() {
@@ -345,7 +314,7 @@ public class Shooter implements RobotProperties {
 
     /**
      * Returns the speed of the lower shooter motor in percent.
-     * 
+     *
      * @return The speed of the lower shooter motor, from -1.0 to 1.0.
      */
     public double getLowerShooterSpeed() {
@@ -354,7 +323,7 @@ public class Shooter implements RobotProperties {
 
     /**
      * Returns the speed of the upper shooter motor.
-     * 
+     *
      * @return The speed of the upper shooter motor in percent, from -1.0 to 1.0.
      */
     public double getUpperShooterSpeed() {
@@ -362,14 +331,10 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Returns if the velocity of the both shooter motors is within the
-     * provided percent error margin.
-     * 
-     * @param percentError
-     *            The percent error, from 0.0 to 1.0 with 1.0 being
-     *            equivilent to 100%, allowed to be considered at velocity.
-     * @return true if the motors current velocity is within the given percent
-     *         error, false otherwise.
+     * Returns if the velocity of the both shooter motors is within the provided percent error margin.
+     *
+     * @param percentError The percent error, from 0.0 to 1.0 with 1.0 being equivilent to 100%, allowed to be considered at velocity.
+     * @return true if the motors current velocity is within the given percent error, false otherwise.
      */
     public boolean isBothShootersAtVelocity(double percentError) {
         percentError = Math.abs(percentError);
@@ -383,9 +348,8 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the speed of the feeder motors to the given value.
-     * 
-     * @param speed
-     *            The speed, from -1.0 to 1.0, to set the feeder motors to.
+     *
+     * @param speed The speed, from -1.0 to 1.0, to set the feeder motors to.
      */
     public void setLowerFeederSpeed(final double speed) {
         if (!lowerFeederExecutorActive.get()) {
@@ -394,14 +358,10 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Sets the speed of the feeder motors to the given value and keeps them running
-     * for the desired time.
-     * 
-     * @param speed
-     *            The speed, from -1.0 to 1.0, to set the feeder motor to.
-     * @param runTime
-     *            The amount of time, in seconds, to keep the motors spinning
-     *            for.
+     * Sets the speed of the feeder motors to the given value and keeps them running for the desired time.
+     *
+     * @param speed   The speed, from -1.0 to 1.0, to set the feeder motor to.
+     * @param runTime The amount of time, in seconds, to keep the motors spinning for.
      */
     public void runLowerFeeder(final double speed, final double runTime) {
         try {
@@ -430,9 +390,8 @@ public class Shooter implements RobotProperties {
 
     /**
      * Sets the speed of the feeder motors to the given value.
-     * 
-     * @param speed
-     *            The speed, from -1.0 to 1.0, to set the feeder motors to.
+     *
+     * @param speed The speed, from -1.0 to 1.0, to set the feeder motors to.
      */
     public void setUpperFeederSpeed(final double speed) {
         if (!upperFeederExecutorActive.get()) {
@@ -441,14 +400,10 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Sets the speed of the feeder motors to the given value and keeps them running
-     * for the desired time.
-     * 
-     * @param speed
-     *            The speed, from -1.0 to 1.0, to set the feeder motor to.
-     * @param runTime
-     *            The amount of time, in seconds, to keep the motors spinning
-     *            for.
+     * Sets the speed of the feeder motors to the given value and keeps them running for the desired time.
+     *
+     * @param speed   The speed, from -1.0 to 1.0, to set the feeder motor to.
+     * @param runTime The amount of time, in seconds, to keep the motors spinning for.
      */
     public void runUpperFeeder(final double speed, final double runTime) {
         try {
@@ -476,14 +431,10 @@ public class Shooter implements RobotProperties {
     }
 
     /**
-     * Sets the speed of the feeder motors to the given value and keeps them running
-     * for the desired time.
-     * 
-     * @param speed
-     *            The speed, from -1.0 to 1.0, to set the feeder motor to.
-     * @param runTime
-     *            The amount of time, in seconds, to keep the motors spinning
-     *            for.
+     * Sets the speed of the feeder motors to the given value and keeps them running for the desired time.
+     *
+     * @param speed   The speed, from -1.0 to 1.0, to set the feeder motor to.
+     * @param runTime The amount of time, in seconds, to keep the motors spinning for.
      */
     public void pulseUpperFeeder(final double speed, final double runTime) {
         try {

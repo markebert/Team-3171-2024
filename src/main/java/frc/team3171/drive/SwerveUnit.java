@@ -137,8 +137,8 @@ public class SwerveUnit implements RobotProperties {
 
         // Init the gyro PID controller
         slewPIDController = new ThreadedPIDController(this::getSlewAngle, SLEW_KP, SLEW_KI, SLEW_KD, SLEW_PID_MIN, SLEW_PID_MAX, false);
-        slewPIDController.setMinValue(-180);
-        slewPIDController.setMaxValue(180);
+        slewPIDController.setMinSensorValue(-180);
+        slewPIDController.setMaxSensorValue(180);
         slewPIDController.start(20, true, slewPIDData);
 
         // Init the global variables
