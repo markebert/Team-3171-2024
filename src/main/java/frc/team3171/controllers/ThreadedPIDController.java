@@ -6,11 +6,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
+// FRC Imports
 import edu.wpi.first.wpilibj.Timer;
+
+// Team 3171 Imports
 import static frc.team3171.HelperFunctions.Get_Displacement;
 import static frc.team3171.HelperFunctions.Normalize_Value;
 
@@ -26,32 +28,59 @@ public class ThreadedPIDController {
     private final Supplier<Double> sensor;
     private final ReentrantLock START_LOCK, PID_LOCK;
     private final AtomicBoolean started, disablePID, continuous;
-    private final AtomicReference<Double> kP, kI, kD, PID_MIN, PID_MAX;
-    private final AtomicReference<Double> pidValue, sensorValue, sensorLockValue, minSensorValue, maxSensorValue;
 
     /**
      * Variables
      */
+    private volatile double pidValue, sensorValue, sensorLockValue, minValue, maxValue;
     private double sum = 0, rate = 0;
     private double proportionalTemp, sumTemp, rateTemp;
-    private double lastTime = 0;
+    private double currentTime = 0, lastTime = 0;
+
+    /**
+     * Constants
+     */
+    private volatile double kP, kI, kD;
+    private final double PID_MIN, PID_MAX;
 
     /**
      * Constructor
-     *
-     * @param sensor     The sensor that the {@code PIDController} will get its sensor values from. This object must implement the {@code Sensor} Interface. Once set, this {@code DoubleSupplier}
-     *                   cannot be changed during this instance.
-     * @param kP         The proportional value constant for the {@code PIDController}. This value is arbitrary and based upon testing of the {@code PIDController} to find the values that works best
-     *                   for your system. Once set, this values cannot be changed during this instance.
-     * @param kI         The Integral value constant for the {@code PIDController}. This value is arbitrary and based upon testing of the {@code PIDController} to find the values that works best for
-     *                   your system. Once set, this value cannot be changed during this instance.
-     * @param kD         The Derivative value constant for the {@code PIDController}. This value is arbitrary and based upon testing of the {@code PIDController} to find the values that works best for
-     *                   your system. Once set, this value cannot be changed during this instance.
-     * @param PID_MIN    The minimum value that the {@code PIDController} is allowed obtain. If the value becomes smaller then the given constant, then the {@code PIDController} will also prevent
-     *                   accumulation of the sum and will set the PID value to the minimum value. Once set, this value cannot be changed during this instance.
-     * @param PID_MAX    The maximum value that the {@code PIDController} is allowed obtain. If the value becomes larger then the given constant, then the {@code PIDController} will also prevent
-     *                   accumulation of the sum and will set the PID value to the maximum value. Once set, this value cannot be changed during this instance.
-     * @param continuous
+     * 
+     * @param sensor
+     *            The sensor that the {@code PIDController} will get its sensor
+     *            values from. This object must implement the {@code Sensor}
+     *            Interface. Once set, this {@code DoubleSupplier} cannot be
+     *            changed during this instance.
+     * @param kP
+     *            The proportional value constant for the {@code PIDController}.
+     *            This value is arbitrary and based upon testing of the
+     *            {@code PIDController} to find the values that works best for
+     *            your system. Once set, this values cannot be changed during
+     *            this instance.
+     * @param kI
+     *            The Integral value constant for the {@code PIDController}.
+     *            This value is arbitrary and based upon testing of the
+     *            {@code PIDController} to find the values that works best for
+     *            your system. Once set, this value cannot be changed during
+     *            this instance.
+     * @param kD
+     *            The Derivative value constant for the {@code PIDController}.
+     *            This value is arbitrary and based upon testing of the
+     *            {@code PIDController} to find the values that works best for
+     *            your system. Once set, this value cannot be changed during
+     *            this instance.
+     * @param PID_MIN
+     *            The minimum value that the {@code PIDController} is allowed
+     *            obtain. If the value becomes smaller then the given constant,
+     *            then the {@code PIDController} will also prevent accumulation
+     *            of the sum and will set the PID value to the minimum value.
+     *            Once set, this value cannot be changed during this instance.
+     * @param PID_MAX
+     *            The maximum value that the {@code PIDController} is allowed
+     *            obtain. If the value becomes larger then the given constant,
+     *            then the {@code PIDController} will also prevent accumulation
+     *            of the sum and will set the PID value to the maximum value.
+     *            Once set, this value cannot be changed during this instance.
      */
     public ThreadedPIDController(Supplier<Double> sensor, double kP, double kI, double kD, double PID_MIN, double PID_MAX, boolean continuous) {
         this.sensor = sensor;
@@ -61,25 +90,30 @@ public class ThreadedPIDController {
         this.disablePID = new AtomicBoolean(true);
         this.continuous = new AtomicBoolean(continuous);
 
-        this.kP = new AtomicReference<>(kP);
-        this.kI = new AtomicReference<>(kI);
-        this.kD = new AtomicReference<>(kD);
-        this.PID_MIN = new AtomicReference<>(PID_MIN);
-        this.PID_MAX = new AtomicReference<>(PID_MAX);
-
-        this.pidValue = new AtomicReference<>(Double.valueOf(0));
-        this.sensorValue = new AtomicReference<>(Double.valueOf(0));
-        this.sensorLockValue = new AtomicReference<>(Double.valueOf(0));
-        this.minSensorValue = new AtomicReference<>(Double.valueOf(0));
-        this.maxSensorValue = new AtomicReference<>(Double.valueOf(0));
+        this.pidValue = 0;
+        this.sensorValue = 0;
+        this.sensorLockValue = 0;
+        this.minValue = 0;
+        this.maxValue = 0;
+        this.kP = kP;
+        this.kI = kI;
+        this.kD = kD;
+        this.PID_MIN = PID_MIN;
+        this.PID_MAX = PID_MAX;
     }
 
     /**
      * Starts the PID Controller. Can only be called once.
-     *
-     * @param updateRate  The update rate, in milliseconds of the pid controller.
-     * @param defaultZero Whether or not when the {@link ThreadedPIDController} is disabled if the sensor lock value should be set to 0 or to the current sensor value.
-     * @param logData     A queue to store the generated values from the controller to graph or record.
+     * 
+     * @param updateRate
+     *            The update rate, in milliseconds of the pid controller.
+     * @param defaultZero
+     *            Whether or not when the {@link ThreadedPIDController} is
+     *            disabled if the sensor lock value should be set to 0 or to
+     *            the current sensor value.
+     * @param logData
+     *            A queue to store the generated values from the controller
+     *            to graph or record.
      */
     public void start(final int updateRate, final boolean defaultZero, final ConcurrentLinkedQueue<String> logData) {
         try {
@@ -87,7 +121,7 @@ public class ThreadedPIDController {
             final double startTime = Timer.getFPGATimestamp();
             if (started.compareAndSet(false, true)) {
                 executor.scheduleAtFixedRate(() -> {
-                    sensorValue.set(sensor.get());
+                    sensorValue = sensor.get();
                     if (disablePID.get()) {
                         if (defaultZero) {
                             updateSensorLockValue(0);
@@ -101,16 +135,17 @@ public class ThreadedPIDController {
                         try {
                             PID_LOCK.lock();
                             if (continuous.get()) {
-                                pidValue.set(calculatePID(sensorLockValue.get() - sensorValue.get()));
+                                pidValue = calculatePID(sensorLockValue - sensorValue);
                             } else {
-                                pidValue.set(calculatePID(Get_Displacement(sensorValue.get(), sensorLockValue.get(), minSensorValue.get(), maxSensorValue.get())));
+                                pidValue = calculatePID(Get_Displacement(sensorValue, sensorLockValue, minValue, maxValue));
                             }
                         } finally {
                             PID_LOCK.unlock();
                         }
                         if (logData != null) {
-                            logData.add(String.format("%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f", (Timer.getFPGATimestamp() - startTime), getSensorValue(), getSensorLockValue(), getPIDValue(),
-                                    proportionalTemp, sumTemp, rateTemp));
+                            logData.add(String.format("%.4f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+                                    (Timer.getFPGATimestamp() - startTime), getSensorValue(), getSensorLockValue(),
+                                    getPIDValue(), proportionalTemp, sumTemp, rateTemp));
                         }
                     }
                 }, 0L, updateRate, TimeUnit.MILLISECONDS);
@@ -122,8 +157,6 @@ public class ThreadedPIDController {
 
     /**
      * Starts the PID Controller. Can only be called once.
-     *
-     * @param defaultZero
      */
     public void start(final boolean defaultZero) {
         start(20, defaultZero, null);
@@ -152,13 +185,12 @@ public class ThreadedPIDController {
 
     /**
      * Calculates the PID Value
-     *
+     * 
      * @return The PID Value
      */
     private final double calculatePID(final double displacement) {
         double pid = 0, sum = this.sum;
-        double kP = this.kP.get(), kI = this.kI.get(), kD = this.kD.get();
-        double currentTime = Timer.getFPGATimestamp();
+        currentTime = Timer.getFPGATimestamp();
         rate = (displacement / ((currentTime - lastTime) * 1000));
         sum += rate;
         proportionalTemp = (kP * displacement);
@@ -168,10 +200,10 @@ public class ThreadedPIDController {
         lastTime = currentTime;
         // Don't let the PID value increase past PID_MAX or below PID_MIN and
         // prevent accumulation of the sum
-        if (pid >= PID_MAX.get()) {
-            pid = PID_MAX.get();
-        } else if (pid <= PID_MIN.get()) {
-            pid = PID_MIN.get();
+        if (pid >= PID_MAX) {
+            pid = PID_MAX;
+        } else if (pid <= PID_MIN) {
+            pid = PID_MIN;
         } else {
             this.sum = sum;
         }
@@ -179,39 +211,44 @@ public class ThreadedPIDController {
     }
 
     /**
-     * Forces the PID Controller to set its current desired lock value to its current sensor value.
+     * Forces the PID Controller to set its current desired lock value to its
+     * current sensor value.
      */
     public void updateSensorLockValue() {
-        updateSensorLockValue(sensorValue.get());
+        updateSensorLockValue(sensorValue);
     }
 
     /**
-     * Forces the PID Controller to set its current desired lock value to the given value but doesn't reset any accumulated values.
-     *
-     * @param sensorLockValue The desired sensor lock value.
+     * Forces the PID Controller to set its current desired lock value to the given
+     * value but doesn't reset any accumulated values.
+     * 
+     * @param sensorLockValue
+     *            The desired sensor lock value.
      */
     public void updateSensorLockValueWithoutReset(final double sensorLockValue) {
         if (continuous.get()) {
-            this.sensorLockValue.set(sensorLockValue);
+            this.sensorLockValue = sensorLockValue;
         } else {
-            this.sensorLockValue.set(Normalize_Value(sensorLockValue, minSensorValue.get(), maxSensorValue.get()));
+            this.sensorLockValue = Normalize_Value(sensorLockValue, minValue, maxValue);
         }
     }
 
     /**
-     * Forces the PID Controller to set its current desired lock value to the given value.
-     *
-     * @param sensorLockValue The desired sensor lock value.
+     * Forces the PID Controller to set its current desired lock value to the given
+     * value.
+     * 
+     * @param sensorLockValue
+     *            The desired sensor lock value.
      */
     public void updateSensorLockValue(final double sensorLockValue) {
         try {
             PID_LOCK.lock();
             if (continuous.get()) {
-                this.sensorLockValue.set(sensorLockValue);
+                this.sensorLockValue = sensorLockValue;
             } else {
-                this.sensorLockValue.set(Normalize_Value(sensorLockValue, minSensorValue.get(), maxSensorValue.get()));
+                this.sensorLockValue = Normalize_Value(sensorLockValue, minValue, maxValue);
             }
-            this.pidValue.set(Double.valueOf(0));
+            this.pidValue = 0;
             this.sum = 0;
             this.rate = 0;
             this.lastTime = Timer.getFPGATimestamp();
@@ -222,40 +259,44 @@ public class ThreadedPIDController {
 
     /**
      * Returns the PID Value
-     *
+     * 
      * @return The current PID Value
      */
     public double getPIDValue() {
-        return pidValue.get();
+        return pidValue;
     }
 
     /**
-     * Returns the current sensor value from the sensor associated with this {@code PIDController}.
-     *
+     * Returns the current sensor value from the sensor associated with this
+     * {@code PIDController}.
+     * 
      * @return The current sensor reading from {@code Sensor}.
      */
     public double getSensorValue() {
-        return sensorValue.get();
+        return sensorValue;
     }
 
     /**
      * Returns the current sensor lock value from this {@code PIDController}.
-     *
+     * 
      * @return The current sensor lock value.
      */
     public double getSensorLockValue() {
-        return sensorLockValue.get();
+        return sensorLockValue;
     }
 
     /**
-     * Disables the {@code PIDController} such that the the PID value is zero and constantly resets any accumulated values and sets the lock value to the current sensor value.
+     * Disables the {@code PIDController} such that the the PID value is zero and
+     * constantly resets any accumulated values and sets the lock value to the
+     * current sensor value.
      */
     public void disablePID() {
         disablePID.compareAndSet(false, true);
     }
 
     /**
-     * Re-enables the {@code PIDController} such that it starts calculating the PID value again.
+     * Re-enables the {@code PIDController} such that it starts calculating the PID
+     * value again.
      */
     public void enablePID() {
         disablePID.compareAndSet(true, false);
@@ -263,8 +304,6 @@ public class ThreadedPIDController {
 
     /**
      * Returns if the {@code PIDController} is disabled.
-     * 
-     * @return
      */
     public boolean isDisabled() {
         return disablePID.get();
@@ -295,56 +334,86 @@ public class ThreadedPIDController {
      * @return the kP
      */
     public double getkP() {
-        return kP.get();
+        return kP;
     }
 
     /**
-     * @param kP the kP to set
+     * @param kP
+     *            the kP to set
      */
     public void setkP(double kP) {
-        this.kP.set(kP);
+        try {
+            PID_LOCK.lock();
+            this.kP = kP;
+        } finally {
+            PID_LOCK.unlock();
+        }
     }
 
     /**
      * @return the kI
      */
     public double getkI() {
-        return kI.get();
+        return kI;
     }
 
     /**
-     * @param kI the kI to set
+     * @param kI
+     *            the kI to set
      */
     public void setkI(double kI) {
-        this.kI.set(kI);
+        try {
+            PID_LOCK.lock();
+            this.kI = kI;
+        } finally {
+            PID_LOCK.unlock();
+        }
     }
 
     /**
      * @return the kD
      */
     public double getkD() {
-        return kD.get();
+        return kD;
     }
 
     /**
-     * @param kD the kD to set
+     * @param kD
+     *            the kD to set
      */
     public void setkD(double kD) {
-        this.kD.set(kD);
+        try {
+            PID_LOCK.lock();
+            this.kD = kD;
+        } finally {
+            PID_LOCK.unlock();
+        }
     }
 
     /**
-     * @param minValue the minValue to set
+     * @param minValue
+     *            the minValue to set
      */
-    public void setMinSensorValue(double minValue) {
-        this.minSensorValue.set(minValue);
+    public void setMinValue(double minValue) {
+        try {
+            PID_LOCK.lock();
+            this.minValue = minValue;
+        } finally {
+            PID_LOCK.unlock();
+        }
     }
 
     /**
-     * @param maxValue the maxValue to set
+     * @param maxValue
+     *            the maxValue to set
      */
-    public void setMaxSensorValue(double maxValue) {
-        this.maxSensorValue.set(maxValue);
+    public void setMaxValue(double maxValue) {
+        try {
+            PID_LOCK.lock();
+            this.maxValue = maxValue;
+        } finally {
+            PID_LOCK.unlock();
+        }
     }
 
 }

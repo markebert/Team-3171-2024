@@ -1,7 +1,4 @@
 {
-  "editor.wordWrap": "wordWrapColumn",
-  "editor.wordWrapColumn": 200,
-  "java.format.settings.url": ".vscode/formatter-settings.xml",
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.server.launchMode": "Standard",
   "files.exclude": {
@@ -21,15 +18,14 @@
     {
       "name": "WPIlibUnitTests",
       "workingDirectory": "${workspaceFolder}/build/jni/release",
-      "vmargs": [
-        "-Djava.library.path=${workspaceFolder}/build/jni/release"
-      ],
+      "vmargs": [ "-Djava.library.path=${workspaceFolder}/build/jni/release" ],
       "env": {
-        "LD_LIBRARY_PATH": "${workspaceFolder}/build/jni/release",
+        "LD_LIBRARY_PATH": "${workspaceFolder}/build/jni/release" ,
         "DYLD_LIBRARY_PATH": "${workspaceFolder}/build/jni/release"
       }
     },
   ],
   "java.test.defaultConfig": "WPIlibUnitTests",
+  "java.format.settings.url": "eclipse-formatter.xml",
   "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx2G -Xms100m -Xlog:disable"
 }

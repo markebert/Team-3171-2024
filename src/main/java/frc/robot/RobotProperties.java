@@ -35,10 +35,14 @@ public interface RobotProperties {
         public static final boolean SWERVE_UNIT_ORIENTATION_OPTIMIZATION = true;
 
         /** Swerve Unit Configuration **/
-        public static final SwerveUnitConfig lf_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 2, MOTOR_TYPE.REV_SPARKMAX, 3, ENCODER_TYPE.REV, 3).build();
-        public static final SwerveUnitConfig lr_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 4, MOTOR_TYPE.REV_SPARKMAX, 5, ENCODER_TYPE.REV, 1).build();
-        public static final SwerveUnitConfig rf_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 6, MOTOR_TYPE.REV_SPARKMAX, 7, ENCODER_TYPE.REV, 2).build();
-        public static final SwerveUnitConfig rr_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 8, MOTOR_TYPE.REV_SPARKMAX, 9, ENCODER_TYPE.REV, 0).build();
+        public static final SwerveUnitConfig lf_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 2, MOTOR_TYPE.REV_SPARKMAX, 3,
+                        ENCODER_TYPE.REV, 3).build();
+        public static final SwerveUnitConfig lr_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 4, MOTOR_TYPE.REV_SPARKMAX, 5,
+                        ENCODER_TYPE.REV, 1).build();
+        public static final SwerveUnitConfig rf_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 6, MOTOR_TYPE.REV_SPARKMAX, 7,
+                        ENCODER_TYPE.REV, 2).build();
+        public static final SwerveUnitConfig rr_Unit_Config = new SwerveUnitConfigBuilder(MOTOR_TYPE.REV_SPARKFLEX, 8, MOTOR_TYPE.REV_SPARKMAX, 9,
+                        ENCODER_TYPE.REV, 0).build();
 
         /** CAN ID Properties **/
         public static final int GYRO_CAN_ID = 10;
@@ -80,8 +84,8 @@ public interface RobotProperties {
                 {
                         put("FRONT_TARGETING_CAMERA", new PhotonCameraConfig("FRONT_TARGETING_CAMERA", Units.inchesToMeters(15), Units.degreesToRadians(22.5)));
                         put("REAR_TARGETING_CAMERA", new PhotonCameraConfig("REAR_TARGETING_CAMERA", Units.inchesToMeters(15), Units.degreesToRadians(22.5)));
-                        // put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
-                        // put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
+                        //put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
+                        //put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
                 }
         };
 
