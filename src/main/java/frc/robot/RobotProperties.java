@@ -53,13 +53,13 @@ public interface RobotProperties {
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = true, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
-        public static final double SHOOTER_TILT_ALLOWED_DEVIATION = 5; // Shooter Tilt Accuracy Settings
+        public static final double SHOOTER_TILT_ALLOWED_DEVIATION = 2; // Shooter Tilt Accuracy Settings
         public static final double SHOOTER_ALLOWED_PERCENT_ERROR = .05; // Shooter Veloctity Accuracy Settings
-        public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .5; // Shooter Veloctity Time Window Settings
+        public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .75; // Shooter Veloctity Time Window Settings
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
-                        put("SHORT_SHOT", new ShooterShot(40, 2100, 400));
+                        put("SHORT_SHOT", new ShooterShot(22, 550, 1000));
                         put("NORMAL_SHOT", new ShooterShot(37, 2500, 3000));
                         put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
                         put("YEET_SHOT", new ShooterShot(70, 2000, 2000));
