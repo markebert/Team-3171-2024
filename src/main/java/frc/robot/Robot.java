@@ -6,14 +6,21 @@ package frc.robot;
 
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.AddressableLED;
+import edu.wpi.first.wpilibj.AddressableLEDBuffer;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 
 // CTRE Imports
@@ -80,6 +87,8 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Vision Controller
   private VisionController visionController;
+
+  private DigitalInput lineSensor;
 
   // Global Variables
   private XboxControllerState driveControllerState, operatorControllerState;
@@ -182,10 +191,36 @@ public class Robot extends TimedRobot implements RobotProperties {
     pickupEdgeTrigger = false;
     shooterButtonEdgeTrigger = false;
     shooterAtSpeedEdgeTrigger = false;
+
+    visionController.shuffleboardTabInit("FRONT_TARGETING_CAMERA", "FRONT_TARGETING_CAMERA");
+
+    lineSensor = new DigitalInput(5);
+
+    m_ledBuffer = new AddressableLEDBuffer(288);
+
+    // Set the data
+    for (int i = 0; i < m_ledBuffer.getLength(); i++) {
+      m_ledBuffer.setRGB(i, 0, 255, 0);
+    }
+    m_led = new AddressableLED(4);
+    m_led.setLength(m_ledBuffer.getLength());
+    m_led.setData(m_ledBuffer);
+    m_led.start();
+
+    ShuffleboardTab tab = Shuffleboard.getTab("Periodic");
+    tab.addBoolean("Line Sensor", () -> lineSensor.get());
   }
+
+  AddressableLED m_led;
+  AddressableLEDBuffer m_ledBuffer;
 
   @Override
   public void robotPeriodic() {
+    for (int i = 0; i < m_ledBuffer.getLength(); i++) {
+      m_ledBuffer.setRGB(i, 0, 255, 0);
+    }
+    m_led.setData(m_ledBuffer);
+
     // Update the controller states
     driveControllerState = driveController.isConnected() ? new XboxControllerState(driveController) : new XboxControllerState();
     operatorControllerState = operatorController.isConnected() ? new XboxControllerState(operatorController) : new XboxControllerState();
