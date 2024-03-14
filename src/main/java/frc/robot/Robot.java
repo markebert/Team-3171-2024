@@ -92,7 +92,6 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Global Variables
   private XboxControllerState driveControllerState, operatorControllerState;
-  private double gyroValue;
   private boolean robotOffGround;
   private volatile boolean fieldOrientationFlipped;
   private double shooterAtSpeedStartTime;
@@ -177,7 +176,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Global Variable Init
     driveControllerState = new XboxControllerState();
     operatorControllerState = new XboxControllerState();
-    gyroValue = 0;
     fieldOrientationFlipped = false;
     shooterAtSpeedStartTime = 0;
 
@@ -211,7 +209,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     periodicTab.addBoolean("Flipped", () -> fieldOrientationFlipped);
 
     // Put the values on Shuffleboard
-    periodicTab.addString("Gyro", () -> String.format("%.2f\u00B0 | %.2f\u00B0", gyroValue, gyroPIDController.getSensorLockValue()));
+    periodicTab.addString("Gyro", () -> String.format("%.2f\u00B0 | %.2f\u00B0", gyroPIDController.getSensorValue(), gyroPIDController.getSensorLockValue()));
     periodicTab.addBoolean("Off Ground:", () -> robotOffGround);
 
     // Colors Sensor Values
@@ -240,16 +238,13 @@ public class Robot extends TimedRobot implements RobotProperties {
       leftStickMagnitude = leftStickMagnitude > 1 ? 1 : leftStickMagnitude;
 
       // Calculate the field corrected drive angle
-      final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
+      final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroPIDController.getSensorValue()) : leftStickAngle;
 
       // Operator Controller Values
       debugTab.addString("Left Stick Angle", () -> String.format("%.2f\u00B0", leftStickAngle));
       debugTab.addString("Left Stick Velocity", () -> String.format("%.2f", leftStickMagnitude));
       debugTab.addString("Right Stick X", () -> String.format("%.2f", rightStickX));
       debugTab.addString("Field Adjusted Angle", () -> String.format("%.2f\u00B0", fieldCorrectedAngle));
-
-      // Shooter Values
-      debugTab.addString("Shooter Tilt Raw:", () -> String.format("%.2f", shooterController.getShooterTiltRaw()));
     }
   }
 
@@ -259,8 +254,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     driveControllerState = driveController.isConnected() ? new XboxControllerState(driveController) : new XboxControllerState();
     operatorControllerState = operatorController.isConnected() ? new XboxControllerState(operatorController) : new XboxControllerState();
 
-    // Update Gyro Value
-    gyroValue = gyroPIDController.getSensorValue();
+    // Update off ground value
     robotOffGround = Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5;
 
     // Field Orientation Chooser
@@ -313,9 +307,12 @@ public class Robot extends TimedRobot implements RobotProperties {
           final XboxControllerState driveControllerState = playbackData.getDriveControllerState();
           final XboxControllerState operatorControllerState = playbackData.getOperatorControllerState();
 
+          // Gyro Value
+          final double gyroValue = gyroPIDController.getSensorValue();
+
           // Robot drive controls
-          driveControlsPeriodic(driveControllerState);
-          operatorControlsPeriodic(operatorControllerState);
+          driveControlsPeriodic(driveControllerState, gyroValue);
+          operatorControlsPeriodic(operatorControllerState, gyroValue);
 
           // Checks for new data and when to switch to it
           if ((Timer.getFPGATimestamp() - autonStartTime) >= playbackData.getFPGATimestamp()) {
@@ -346,9 +343,12 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   @Override
   public void teleopPeriodic() {
+    // Gyro Value
+    final double gyroValue = gyroPIDController.getSensorValue();
+
     // Robot drive controls
-    driveControlsPeriodic(driveControllerState);
-    operatorControlsPeriodic(operatorControllerState);
+    driveControlsPeriodic(driveControllerState, gyroValue);
+    operatorControlsPeriodic(operatorControllerState, gyroValue);
 
     // Auton Recording
     final double autonTimeStamp = Timer.getFPGATimestamp() - autonStartTime;
@@ -420,7 +420,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     shooterAtSpeedEdgeTrigger = false;
   }
 
-  private void driveControlsPeriodic(final XboxControllerState driveControllerState) {
+  private void driveControlsPeriodic(final XboxControllerState driveControllerState, final double gyroValue) {
     // Get the needed joystick values after calculating the deadzones
     final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
     final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
@@ -516,7 +516,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   }
 
-  private void operatorControlsPeriodic(final XboxControllerState operatorControllerState) {
+  private void operatorControlsPeriodic(final XboxControllerState operatorControllerState, final double gyroValue) {
     // Get the needed joystick values after calculating the deadzones
     final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -operatorControllerState.getLeftY());
 

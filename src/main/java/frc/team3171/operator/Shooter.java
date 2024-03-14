@@ -589,6 +589,7 @@ public class Shooter implements RobotProperties {
         shooterTab.addString("Lower Shooter RPM:", () -> String.format("%.2f | %.2f", getLowerShooterVelocity(), getLowerShooterTargetVelocity()));
         shooterTab.addString("Upper Shooter RPM:", () -> String.format("%.2f | %.2f", getUpperShooterVelocity(), getUpperShooterTargetVelocity()));
         shooterTab.addString("Shooter Tilt:", () -> String.format("%.2f | %.2f", getShooterTilt(), getShooterTiltSetPosition()));
+        shooterTab.addString("Shooter Tilt Raw:", () -> String.format("%.2f", getShooterTiltRaw()));
     }
 
 }
