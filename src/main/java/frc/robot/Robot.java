@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -24,7 +25,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import com.ctre.phoenix6.hardware.Pigeon2;
 
 // REV Imports
-import com.revrobotics.ColorMatch;
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -63,7 +63,6 @@ public class Robot extends TimedRobot implements RobotProperties {
   private Shooter shooterController;
   private DigitalInput feedSensor;
   private ColorSensorV3 upperFeedColorSensor;
-  private ColorMatch colorMatcher;
 
   // Linear Actuators
   private CANSparkMax leftAcuator, rightAcuator;
@@ -117,6 +116,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     } catch (Exception e) {
       e.printStackTrace();
     }
+    feedSensor = new DigitalInput(5);
 
     // Linear Acuators
     leftAcuator = new CANSparkMax(LEFT_ACUATOR_CAN_ID, MotorType.kBrushed);
@@ -126,8 +126,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     gyro = new Pigeon2(GYRO_CAN_ID, "canivore");
     gyro.reset();
     upperFeedColorSensor = new ColorSensorV3(Port.kMXP);
-    colorMatcher = new ColorMatch();
-    colorMatcher.addColorMatch(RING_COLOR_ONE);
 
     // PID Controllers
     gyroPIDController = new ThreadedPIDController(() -> Normalize_Gryo_Value(gyro.getAngle() + (fieldOrientationFlipped ? 180 : 0)), GYRO_KP, GYRO_KI, GYRO_KD,
@@ -161,12 +159,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     fieldOrientationChooser.setDefaultOption("Pick an option", false);
     fieldOrientationChooser.addOption("0\u00B0", false);
     fieldOrientationChooser.addOption("180\u00B0", true);
-
-    feedSensor = new DigitalInput(5);
-
-    // Color Matcher init
-    colorMatcher.addColorMatch(RING_COLOR_ONE);
-    colorMatcher.setConfidenceThreshold(COLOR_CONFIDENCE);
 
     // Vision Controller Init
     visionController = new VisionController();
@@ -216,7 +208,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     periodicTab.addBoolean("Line Sensor", () -> !feedSensor.get());
     final int red = upperFeedColorSensor.getBlue(), green = upperFeedColorSensor.getGreen(), blue = upperFeedColorSensor.getBlue();
     periodicTab.addString("Upper Feed Sensor:", () -> String.format("[R: %d, G: %d, B: %d] | Prox: %d", red, green, blue, upperFeedColorSensor.getProximity()));
-    periodicTab.addBoolean("Ring Color Match", () -> !feedSensor.get());
 
     // Controller Values
     swerveDrive.shuffleboardInit("Swerve Debug");
@@ -268,6 +259,13 @@ public class Robot extends TimedRobot implements RobotProperties {
       System.out.println("Swerve Drive has been calibrated!");
     }
     zeroEdgeTrigger = zeroTrigger;
+
+    // LED Updates
+    Color color = upperFeedColorSensor.getColor();
+    for (int i = 0; i < m_ledBuffer.getLength(); i++) {
+      m_ledBuffer.setLED(i, color);
+    }
+    m_led.setData(m_ledBuffer);
   }
 
   @Override
