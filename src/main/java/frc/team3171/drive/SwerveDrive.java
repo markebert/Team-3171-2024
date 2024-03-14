@@ -11,7 +11,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 // FRC Imports
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 
 // Team 3171 Imports
 import frc.robot.RobotProperties;
@@ -238,22 +239,23 @@ public class SwerveDrive implements RobotProperties {
         }
     }
 
-    public void SmartDashboard() {
-        // Update Shuffleboard
-        SmartDashboard.putString("LF Speed", String.format("%.2f", lfUnit.getDriveSpeed()));
-        SmartDashboard.putString("LR Speed", String.format("%.2f", lrUnit.getDriveSpeed()));
-        SmartDashboard.putString("RF Speed", String.format("%.2f", rfUnit.getDriveSpeed()));
-        SmartDashboard.putString("RR Speed", String.format("%.2f", rrUnit.getDriveSpeed()));
+    public void shuffleboardInit(final String tabName) {
+        ShuffleboardTab swerveTab = Shuffleboard.getTab(tabName);
 
-        SmartDashboard.putString("LF Position", String.format("%.2f", lfUnit.getIntegratedEncoderValue()));
-        SmartDashboard.putString("LR Position", String.format("%.2f", lrUnit.getIntegratedEncoderValue()));
-        SmartDashboard.putString("RF Position", String.format("%.2f", rfUnit.getIntegratedEncoderValue()));
-        SmartDashboard.putString("RR Position", String.format("%.2f", rrUnit.getIntegratedEncoderValue()));
+        swerveTab.addString("LF Speed:", () -> String.format("%.2f", lfUnit.getDriveSpeed()));
+        swerveTab.addString("LR Speed:", () -> String.format("%.2f", lrUnit.getDriveSpeed()));
+        swerveTab.addString("RF Speed:", () -> String.format("%.2f", rfUnit.getDriveSpeed()));
+        swerveTab.addString("RR Speed:", () -> String.format("%.2f", rrUnit.getDriveSpeed()));
 
-        SmartDashboard.putString("LR Slew Angle", String.format("%.2f | %.2f", lrUnit.getSlewAngle(), lrUnit.getSlewTargetAngle()));
-        SmartDashboard.putString("LF Slew Angle", String.format("%.2f | %.2f", lfUnit.getSlewAngle(), lfUnit.getSlewTargetAngle()));
-        SmartDashboard.putString("RF Slew Angle", String.format("%.2f | %.2f", rfUnit.getSlewAngle(), rfUnit.getSlewTargetAngle()));
-        SmartDashboard.putString("RR Slew Angle", String.format("%.2f | %.2f", rrUnit.getSlewAngle(), rrUnit.getSlewTargetAngle()));
+        swerveTab.addString("LF Position:", () -> String.format("%.2f", lfUnit.getIntegratedEncoderValue()));
+        swerveTab.addString("LR Position:", () -> String.format("%.2f", lrUnit.getIntegratedEncoderValue()));
+        swerveTab.addString("RF Position:", () -> String.format("%.2f", rfUnit.getIntegratedEncoderValue()));
+        swerveTab.addString("RR Position:", () -> String.format("%.2f", rrUnit.getIntegratedEncoderValue()));
+
+        swerveTab.addString("LF Slew Angle:", () -> String.format("%.2f | %.2f", lfUnit.getSlewAngle(), lfUnit.getSlewTargetAngle()));
+        swerveTab.addString("LR Slew Angle:", () -> String.format("%.2f | %.2f", lrUnit.getSlewAngle(), lrUnit.getSlewTargetAngle()));
+        swerveTab.addString("RF Slew Angle:", () -> String.format("%.2f | %.2f", rfUnit.getSlewAngle(), rfUnit.getSlewTargetAngle()));
+        swerveTab.addString("RR Slew Angle:", () -> String.format("%.2f | %.2f", rrUnit.getSlewAngle(), rrUnit.getSlewTargetAngle()));
     }
 
 }

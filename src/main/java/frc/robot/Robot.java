@@ -6,7 +6,6 @@ package frc.robot;
 
 // Java Imports
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -16,8 +15,6 @@ import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.AddressableLED;
 import edu.wpi.first.wpilibj.AddressableLEDBuffer;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -64,6 +61,7 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Shooter Objects
   private Shooter shooterController;
+  private DigitalInput feedSensor;
   private ColorSensorV3 upperFeedColorSensor;
   private ColorMatch colorMatcher;
 
@@ -88,7 +86,9 @@ public class Robot extends TimedRobot implements RobotProperties {
   // Vision Controller
   private VisionController visionController;
 
-  private DigitalInput lineSensor;
+  // LED Objects
+  private AddressableLED m_led;
+  private AddressableLEDBuffer m_ledBuffer;
 
   // Global Variables
   private XboxControllerState driveControllerState, operatorControllerState;
@@ -99,12 +99,9 @@ public class Robot extends TimedRobot implements RobotProperties {
 
   // Edge Triggers
   private boolean zeroEdgeTrigger;
-  private boolean modeTrigger;
   private boolean pickupEdgeTrigger;
   private boolean shooterButtonEdgeTrigger;
   private boolean shooterAtSpeedEdgeTrigger;
-
-  public static boolean FIELD_ORIENTED_SWERVE = true;
 
   @Override
   public void robotInit() {
@@ -151,15 +148,6 @@ public class Robot extends TimedRobot implements RobotProperties {
     autonTypeChooser = new SendableChooser<>();
     autonTypeChooser.setDefaultOption("Playback Auton", false);
     autonTypeChooser.addOption("Record Auton", true);
-    SmartDashboard.putData("Auton Type", autonTypeChooser);
-
-    // Field Orientation Chooser
-    fieldOrientationChooser = new SendableChooser<>();
-    fieldOrientationChooser.setDefaultOption("Pick an option", false);
-    fieldOrientationChooser.addOption("0\u00B0", false);
-    fieldOrientationChooser.addOption("180\u00B0", true);
-    SmartDashboard.putData("Field Orientation Chooser", fieldOrientationChooser);
-    SmartDashboard.putBoolean("Flipped", false);
 
     // Auton Modes init
     selectedAutonMode = DEFAULT_AUTON;
@@ -168,7 +156,14 @@ public class Robot extends TimedRobot implements RobotProperties {
     for (final String autonMode : AUTON_OPTIONS) {
       autonModeChooser.addOption(autonMode, autonMode);
     }
-    SmartDashboard.putData("Auton Modes", autonModeChooser);
+
+    // Field Orientation Chooser
+    fieldOrientationChooser = new SendableChooser<>();
+    fieldOrientationChooser.setDefaultOption("Pick an option", false);
+    fieldOrientationChooser.addOption("0\u00B0", false);
+    fieldOrientationChooser.addOption("180\u00B0", true);
+
+    feedSensor = new DigitalInput(5);
 
     // Color Matcher init
     colorMatcher.addColorMatch(RING_COLOR_ONE);
@@ -192,66 +187,47 @@ public class Robot extends TimedRobot implements RobotProperties {
     shooterButtonEdgeTrigger = false;
     shooterAtSpeedEdgeTrigger = false;
 
-    visionController.shuffleboardTabInit("FRONT_TARGETING_CAMERA", "FRONT_TARGETING_CAMERA");
-
-    lineSensor = new DigitalInput(5);
+    shuffleboardInit();
 
     m_ledBuffer = new AddressableLEDBuffer(288);
-
     // Set the data
     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
-      m_ledBuffer.setRGB(i, 0, 255, 0);
+      m_ledBuffer.setRGB(i, 0, 128, 0);
     }
     m_led = new AddressableLED(4);
     m_led.setLength(m_ledBuffer.getLength());
     m_led.setData(m_ledBuffer);
     m_led.start();
-
-    ShuffleboardTab tab = Shuffleboard.getTab("Periodic");
-    tab.addBoolean("Line Sensor", () -> lineSensor.get());
   }
 
-  AddressableLED m_led;
-  AddressableLEDBuffer m_ledBuffer;
+  @SuppressWarnings("resource")
+  private void shuffleboardInit() {
+    ShuffleboardTab periodicTab = Shuffleboard.getTab("Periodic");
 
-  @Override
-  public void robotPeriodic() {
-    for (int i = 0; i < m_ledBuffer.getLength(); i++) {
-      m_ledBuffer.setRGB(i, 0, 255, 0);
-    }
-    m_led.setData(m_ledBuffer);
-
-    // Update the controller states
-    driveControllerState = driveController.isConnected() ? new XboxControllerState(driveController) : new XboxControllerState();
-    operatorControllerState = operatorController.isConnected() ? new XboxControllerState(operatorController) : new XboxControllerState();
-
-    // Update Gyro Value
-    gyroValue = gyroPIDController.getSensorValue();
-    robotOffGround = Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5;
-
-    // Field Orientation Chooser
-    fieldOrientationFlipped = fieldOrientationChooser.getSelected().booleanValue();
-    SmartDashboard.putBoolean("Flipped", fieldOrientationFlipped);
+    // Auton Selectors
+    periodicTab.add("Auton Type", autonModeChooser);
+    periodicTab.add("Auton Modes", autonModeChooser);
+    periodicTab.add("Field Orientation Chooser", fieldOrientationChooser);
+    periodicTab.addBoolean("Flipped", () -> fieldOrientationFlipped);
 
     // Put the values on Shuffleboard
-    SmartDashboard.putString("Gyro", String.format("%.2f\u00B0 | %.2f\u00B0", gyroValue, gyroPIDController.getSensorLockValue()));
-    SmartDashboard.putBoolean("Off Ground:", robotOffGround);
+    periodicTab.addString("Gyro", () -> String.format("%.2f\u00B0 | %.2f\u00B0", gyroValue, gyroPIDController.getSensorLockValue()));
+    periodicTab.addBoolean("Off Ground:", () -> robotOffGround);
 
     // Colors Sensor Values
+    periodicTab.addBoolean("Line Sensor", () -> !feedSensor.get());
     final int red = upperFeedColorSensor.getBlue(), green = upperFeedColorSensor.getGreen(), blue = upperFeedColorSensor.getBlue();
-    SmartDashboard.putString("Upper Feed Sensor:", String.format("[R: %d, G: %d, B: %d] | Prox: %d", red, green, blue, upperFeedColorSensor.getProximity()));
-    SmartDashboard.putBoolean("Ring Color Match", colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null);
+    periodicTab.addString("Upper Feed Sensor:", () -> String.format("[R: %d, G: %d, B: %d] | Prox: %d", red, green, blue, upperFeedColorSensor.getProximity()));
+    periodicTab.addBoolean("Ring Color Match", () -> !feedSensor.get());
 
-    // Shooter Info
-    SmartDashboard.putBoolean("Shooter At Speed:", shooterController.isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION));
-    SmartDashboard.putString("Lower Shooter RPM:",
-        String.format("%.2f | %.2f", shooterController.getLowerShooterVelocity(), shooterController.getLowerShooterTargetVelocity()));
-    SmartDashboard.putString("Upper Shooter RPM:",
-        String.format("%.2f | %.2f", shooterController.getUpperShooterVelocity(), shooterController.getUpperShooterTargetVelocity()));
-    SmartDashboard.putString("Shooter Tilt:", String.format("%.2f | %.2f", shooterController.getShooterTilt(), shooterController.getShooterTiltSetPosition()));
+    // Controller Values
+    swerveDrive.shuffleboardInit("Swerve Debug");
+    shooterController.shuffleboardInit("Shooter Debug");
+    visionController.shuffleboardTabInit("FRONT_TARGETING_CAMERA", "FRONT_TARGETING_CAMERA");
 
     if (DEBUG) {
-      SmartDashboard.putString("Match Time:", String.format("%.2f seconds", Timer.getMatchTime()));
+      ShuffleboardTab debugTab = Shuffleboard.getTab("Debug");
+      debugTab.addString("Match Time:", () -> String.format("%.2f seconds", Timer.getMatchTime()));
 
       // Get the needed joystick values after calculating the deadzones
       final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
@@ -267,17 +243,28 @@ public class Robot extends TimedRobot implements RobotProperties {
       final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
 
       // Operator Controller Values
-      SmartDashboard.putString("Left Stick Angle", String.format("%.2f\u00B0", leftStickAngle));
-      SmartDashboard.putString("Left Stick Velocity", String.format("%.2f", leftStickMagnitude));
-      SmartDashboard.putString("Right Stick X", String.format("%.2f", rightStickX));
-      SmartDashboard.putString("Field Adjusted Angle", String.format("%.2f\u00B0", fieldCorrectedAngle));
+      debugTab.addString("Left Stick Angle", () -> String.format("%.2f\u00B0", leftStickAngle));
+      debugTab.addString("Left Stick Velocity", () -> String.format("%.2f", leftStickMagnitude));
+      debugTab.addString("Right Stick X", () -> String.format("%.2f", rightStickX));
+      debugTab.addString("Field Adjusted Angle", () -> String.format("%.2f\u00B0", fieldCorrectedAngle));
 
       // Shooter Values
-      SmartDashboard.putString("Shooter Tilt Raw:", String.format("%.2f", shooterController.getShooterTiltRaw()));
-
-      // Swerve Values
-      swerveDrive.SmartDashboard();
+      debugTab.addString("Shooter Tilt Raw:", () -> String.format("%.2f", shooterController.getShooterTiltRaw()));
     }
+  }
+
+  @Override
+  public void robotPeriodic() {
+    // Update the controller states
+    driveControllerState = driveController.isConnected() ? new XboxControllerState(driveController) : new XboxControllerState();
+    operatorControllerState = operatorController.isConnected() ? new XboxControllerState(operatorController) : new XboxControllerState();
+
+    // Update Gyro Value
+    gyroValue = gyroPIDController.getSensorValue();
+    robotOffGround = Math.abs(gyro.getRoll().getValueAsDouble()) > 5 || Math.abs(gyro.getPitch().getValueAsDouble()) > 5;
+
+    // Field Orientation Chooser
+    fieldOrientationFlipped = fieldOrientationChooser.getSelected().booleanValue();
 
     // Calibrate Swerve Drive
     final boolean zeroTrigger = driveController.getBackButton() && driveController.getStartButton() && isDisabled();
@@ -287,15 +274,6 @@ public class Robot extends TimedRobot implements RobotProperties {
       System.out.println("Swerve Drive has been calibrated!");
     }
     zeroEdgeTrigger = zeroTrigger;
-
-    // Mode Switch
-    final boolean modeSsitch = driveController.getStartButton();
-    if (modeSsitch && !modeTrigger) {
-      // Zero the swerve units
-      FIELD_ORIENTED_SWERVE = !FIELD_ORIENTED_SWERVE;
-    }
-    modeTrigger = modeSsitch;
-    SmartDashboard.putBoolean("Field Oriented", FIELD_ORIENTED_SWERVE);
   }
 
   @Override
@@ -598,7 +576,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         // Feed the ball through the shooter
         shooterController.setLowerFeederSpeed(LOWER_FEED_SHOOT_SPEED);
         shooterController.setUpperFeederSpeed(UPPER_FEED_SHOOT_SPEED);
-      } else if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+      } else if (!feedSensor.get()) {
         // Back off the ball from the feed sensor
         shooterController.setLowerFeederSpeed(LOWER_FEED_BACKFEED_SPEED);
         shooterController.setUpperFeederSpeed(UPPER_FEED_BACKFEED_SPEED);
@@ -618,7 +596,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         // Pickup controls while held
         shooterController.setShooterTiltPosition(0);
         if (shooterTiltWithinRange) {
-          if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+          if (!feedSensor.get()) {
             shooterController.setLowerFeederSpeed(0);
             shooterController.setUpperFeederSpeed(0);
           } else {
@@ -629,7 +607,7 @@ public class Robot extends TimedRobot implements RobotProperties {
           shooterController.setLowerFeederSpeed(0);
           shooterController.setUpperFeederSpeed(0);
         }
-      } else if (pickupEdgeTrigger && (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null)) {
+      } else if (pickupEdgeTrigger && (!feedSensor.get())) {
         // Pickup control when ended
         shooterController.setLowerFeederSpeed(0);
         shooterController.runUpperFeeder(UPPER_FEED_END_SPEED, UPPER_FEED_END_TIME);
@@ -644,7 +622,7 @@ public class Robot extends TimedRobot implements RobotProperties {
         }
         shooterController.setShooterSpeed(SHOOTER_REVERSE_FEED_SPEED);
         shooterController.setLowerFeederSpeed(0);
-        if (colorMatcher.matchColor(upperFeedColorSensor.getColor()) != null) {
+        if (!feedSensor.get()) {
           shooterController.setUpperFeederSpeed(UPPER_FEED_BACKFEED_SPEED);
         } else {
           shooterController.setUpperFeederSpeed(0);

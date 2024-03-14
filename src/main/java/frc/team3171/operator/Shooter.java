@@ -11,6 +11,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 // FRC Imports
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
@@ -578,6 +580,15 @@ public class Shooter implements RobotProperties {
         upperShooterMotor.disable();
         lowerFeederMotorMaster.disable();
         upperFeederMotorMaster.disable();
+    }
+
+    public void shuffleboardInit(final String tabName) {
+        ShuffleboardTab shooterTab = Shuffleboard.getTab(tabName);
+
+        shooterTab.addBoolean("Shooter At Speed:", () -> isBothShootersAtVelocity(SHOOTER_TILT_ALLOWED_DEVIATION));
+        shooterTab.addString("Lower Shooter RPM:", () -> String.format("%.2f | %.2f", getLowerShooterVelocity(), getLowerShooterTargetVelocity()));
+        shooterTab.addString("Upper Shooter RPM:", () -> String.format("%.2f | %.2f", getUpperShooterVelocity(), getUpperShooterTargetVelocity()));
+        shooterTab.addString("Shooter Tilt:", () -> String.format("%.2f | %.2f", getShooterTilt(), getShooterTiltSetPosition()));
     }
 
 }

@@ -29,6 +29,7 @@ public interface RobotProperties {
         public static final String PID_LOG_ADDRESS = "10.31.71.202";
 
         /** Drive Variables **/
+        public static final boolean FIELD_ORIENTED_SWERVE = true;
         public static final double JOYSTICK_DEADZONE = .08;
         public static final double MAX_DRIVE_SPEED = .85, MAX_ROTATION_SPEED = .6;
         public static final boolean PINWHEEL_ZERO_ORIENTATION = true;
@@ -84,8 +85,10 @@ public interface RobotProperties {
                 {
                         put("FRONT_TARGETING_CAMERA", new PhotonCameraConfig("FRONT_TARGETING_CAMERA", Units.inchesToMeters(15), Units.degreesToRadians(22.5)));
                         put("REAR_TARGETING_CAMERA", new PhotonCameraConfig("REAR_TARGETING_CAMERA", Units.inchesToMeters(15), Units.degreesToRadians(22.5)));
-                        //put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
-                        //put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(9), Units.degreesToRadians(0)));
+                        // put("FRONT_PICKUP_CAMERA", new PhotonCameraConfig("FRONT_PICKUP_CAMERA", Units.inchesToMeters(9),
+                        // Units.degreesToRadians(0)));
+                        // put("REAR_PICKUP_CAMERA", new PhotonCameraConfig("REAR_PICKUP_CAMERA", Units.inchesToMeters(9),
+                        // Units.degreesToRadians(0)));
                 }
         };
 
