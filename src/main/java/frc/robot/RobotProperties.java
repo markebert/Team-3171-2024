@@ -60,10 +60,10 @@ public interface RobotProperties {
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
         public static final HashMap<String, ShooterShot> SHOOTER_SHOTS = new HashMap<>() {
                 {
-                        put("SHORT_SHOT", new ShooterShot(22, 550, 1000));
+                        put("SHORT_SHOT", new ShooterShot(22, 550, 800));
                         put("NORMAL_SHOT", new ShooterShot(37, 2500, 3000));
                         put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
-                        put("YEET_SHOT", new ShooterShot(70, 2000, 2000));
+                        put("YEET_SHOT", new ShooterShot(45, 3000, 3000));
                 }
         };
 
