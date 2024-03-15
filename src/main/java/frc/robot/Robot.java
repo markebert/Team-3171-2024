@@ -195,7 +195,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     ShuffleboardTab periodicTab = Shuffleboard.getTab("Periodic");
 
     // Auton Selectors
-    periodicTab.add("Auton Type", autonModeChooser);
+    periodicTab.add("Auton Type", autonTypeChooser);
     periodicTab.add("Auton Modes", autonModeChooser);
     periodicTab.add("Field Orientation Chooser", fieldOrientationChooser);
     periodicTab.addBoolean("Flipped", () -> fieldOrientationFlipped);
@@ -219,23 +219,23 @@ public class Robot extends TimedRobot implements RobotProperties {
       debugTab.addString("Match Time:", () -> String.format("%.2f seconds", Timer.getMatchTime()));
 
       // Get the needed joystick values after calculating the deadzones
-      final double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
-      final double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
-      final double rightStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
+      double leftStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getLeftX());
+      double leftStickY = Deadzone_With_Map(JOYSTICK_DEADZONE, -driveControllerState.getLeftY());
+      double rightStickX = Deadzone_With_Map(JOYSTICK_DEADZONE, driveControllerState.getRightX(), -MAX_ROTATION_SPEED, MAX_ROTATION_SPEED);
 
       // Calculate the left stick angle and magnitude
-      final double leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
+      double leftStickAngle = Normalize_Gryo_Value(Math.toDegrees(Math.atan2(leftStickX, leftStickY)));
       double leftStickMagnitude = Math.sqrt(Math.pow(leftStickX, 2) + Math.pow(leftStickY, 2));
       leftStickMagnitude = leftStickMagnitude > 1 ? 1 : leftStickMagnitude;
 
       // Calculate the field corrected drive angle
-      final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroPIDController.getSensorValue()) : leftStickAngle;
+      double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroPIDController.getSensorValue()) : leftStickAngle;
 
       // Operator Controller Values
-      debugTab.addString("Left Stick Angle", () -> String.format("%.2f\u00B0", leftStickAngle));
-      debugTab.addString("Left Stick Velocity", () -> String.format("%.2f", leftStickMagnitude));
-      debugTab.addString("Right Stick X", () -> String.format("%.2f", rightStickX));
-      debugTab.addString("Field Adjusted Angle", () -> String.format("%.2f\u00B0", fieldCorrectedAngle));
+      //debugTab.addString("Left Stick Angle", () -> String.format("%.2f\u00B0", leftStickAngle));
+      //debugTab.addString("Left Stick Velocity", () -> String.format("%.2f", leftStickMagnitude));
+      //debugTab.addString("Right Stick X", () -> String.format("%.2f", rightStickX));
+      //debugTab.addString("Field Adjusted Angle", () -> String.format("%.2f\u00B0", fieldCorrectedAngle));
     }
   }
 
