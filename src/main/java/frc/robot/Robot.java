@@ -189,7 +189,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
       m_ledBuffer.setRGB(i, 0, 128, 0);
     }
-    m_led = new AddressableLED(4);
+    m_led = new AddressableLED(0);
     m_led.setLength(m_ledBuffer.getLength());
     m_led.setData(m_ledBuffer);
     m_led.start();
