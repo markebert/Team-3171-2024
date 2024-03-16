@@ -54,7 +54,7 @@ public interface RobotProperties {
 
         /** Shooter Variables **/
         public static final boolean LOWER_SHOOTER_INVERTED = true, UPPER_SHOOTER_INVERTED = true, SHOOTER_TILT_INVERTED = false;
-        public static final double SHOOTER_TILT_ALLOWED_DEVIATION = 2; // Shooter Tilt Accuracy Settings
+        public static final double SHOOTER_TILT_ALLOWED_DEVIATION = 3; // Shooter Tilt Accuracy Settings
         public static final double SHOOTER_ALLOWED_PERCENT_ERROR = .05; // Shooter Veloctity Accuracy Settings
         public static final double SHOOTER_DESIRED_AT_SPEED_TIME = .75; // Shooter Veloctity Time Window Settings
         public static final double SHOOTER_REVERSE_FEED_SPEED = -.5;
@@ -68,7 +68,7 @@ public interface RobotProperties {
         };
 
         public static final int SHOOTER_TILT_ID = 4;
-        public static final double SHOOTER_TILT_ZERO_POSITION = 11.25;
+        public static final double SHOOTER_TILT_ZERO_POSITION = 12.3;
         public static final double SHOOTER_TILT_MIN_POSITION = -60, SHOOTER_TILT_MAX_POSITION = 70;
 
         /** Feeder Variables **/
@@ -134,7 +134,7 @@ public interface RobotProperties {
         //public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
        
         /** new tilt PID variables **/
-        public static final double TILT_KP = .01, TILT_KI = .0009, TILT_KD = -.0, TILT_MIN = -.75, TILT_MAX = .75;
+        public static final double TILT_KP = .0125, TILT_KI = .000125, TILT_KD = -.0001, TILT_MIN = -.75, TILT_MAX = .75;
         
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";
