@@ -102,11 +102,15 @@ public class Robot extends TimedRobot implements RobotProperties {
   private boolean shooterButtonEdgeTrigger;
   private boolean shooterAtSpeedEdgeTrigger;
 
+  private boolean doLayoverShot;
+
   @Override
   public void robotInit() {
     // Controllers Init
     driveController = new XboxController(0);
     operatorController = new XboxController(1);
+
+    doLayoverShot = false;
 
     // Drive Controller Init
     swerveDrive = new SwerveDrive(lr_Unit_Config, lf_Unit_Config, rf_Unit_Config, rr_Unit_Config);
@@ -433,6 +437,19 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Calculate the field corrected drive angle
     final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
 
+    // Layover button
+    final boolean button_layover = driveControllerState.getXButton();
+    if (button_layover) {
+      shooterController.setShooterTiltPosition(-60);
+      doLayoverShot = true;
+    }
+
+    // If the layover button is not pressed, but the previous cycle it was.
+    if (!button_layover && doLayoverShot) {
+        shooterController.setShooterTiltPosition(0);
+        doLayoverShot = false;
+    }
+
     // Drive Controls
     final boolean boostMode = driveControllerState.getYButton();
     final boolean targetLocking = driveControllerState.getAButton();
@@ -482,6 +499,10 @@ public class Robot extends TimedRobot implements RobotProperties {
 
       final boolean closeEnough = Math.abs(Get_Gyro_Displacement(gyroValue, gyroPIDController.getSensorLockValue())) <= 1;
       swerveDrive.drive(fieldCorrectedAngle, leftStickMagnitude, FIELD_ORIENTED_SWERVE ? (closeEnough ? 0 : gyroPIDController.getPIDValue()) : 0, boostMode);
+    }
+
+    if (button_layover) {
+      
     }
 
     // Lift Controls

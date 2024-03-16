@@ -69,7 +69,7 @@ public interface RobotProperties {
 
         public static final int SHOOTER_TILT_ID = 4;
         public static final double SHOOTER_TILT_ZERO_POSITION = 11.25;
-        public static final double SHOOTER_TILT_MIN_POSITION = -70, SHOOTER_TILT_MAX_POSITION = 70;
+        public static final double SHOOTER_TILT_MIN_POSITION = -60, SHOOTER_TILT_MAX_POSITION = 70;
 
         /** Feeder Variables **/
         public static final boolean LOWER_FEEDER_INVERTED = true, UPPER_FEEDER_INVERTED = false;
@@ -125,13 +125,17 @@ public interface RobotProperties {
         public static final AprilTagFieldLayout AprilTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo);
 
         /** PID Variables **/
-        public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
+        public static final double GYRO_KP = .01, GYRO_KI = .0001, GYRO_KD = .0, GYRO_MIN = -.5, GYRO_MAX = .5;
+        //public static final double GYRO_KP = .013, GYRO_KI = .00075, GYRO_KD = .00075, GYRO_MIN = -.5, GYRO_MAX = .5;
         // public static final double GYRO_KP = .015, GYRO_KI = 0.0015, GYRO_KD = -.15, GYRO_MIN = -.75, GYRO_MAX = .75;
         // public static final double SLEW_KP = -.005, SLEW_KI = -.0004, SLEW_KD = .035, SLEW_PID_MIN = -1, SLEW_PID_MAX = 1;
         public static final double SLEW_KP = -.015, SLEW_KI = -0.002, SLEW_KD = .003, SLEW_PID_MIN = -.6, SLEW_PID_MAX = .75;
         public static final double SHOOTER_KP = .00025, SHOOTER_KI = .0004, SHOOTER_KD = -.002, SHOOTER_MIN = -1, SHOOTER_MAX = 1;
-        public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
-
+        //public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
+       
+        /** new tilt PID variables **/
+        public static final double TILT_KP = .01, TILT_KI = .0009, TILT_KD = -.0, TILT_MIN = -.75, TILT_MAX = .75;
+        
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";
 
