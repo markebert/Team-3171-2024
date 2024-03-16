@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.I2C.Port;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -195,9 +196,9 @@ public class Robot extends TimedRobot implements RobotProperties {
     ShuffleboardTab periodicTab = Shuffleboard.getTab("Periodic");
 
     // Auton Selectors
-    periodicTab.add("Auton Type", autonTypeChooser);
-    periodicTab.add("Auton Modes", autonModeChooser);
-    periodicTab.add("Field Orientation Chooser", fieldOrientationChooser);
+    periodicTab.add("Auton Type", autonTypeChooser).withWidget(BuiltInWidgets.kComboBoxChooser);
+    periodicTab.add("Auton Modes", autonModeChooser).withWidget(BuiltInWidgets.kComboBoxChooser);
+    periodicTab.add("Field Orientation Chooser", fieldOrientationChooser).withWidget(BuiltInWidgets.kComboBoxChooser);
     periodicTab.addBoolean("Flipped", () -> fieldOrientationFlipped);
 
     // Put the values on Shuffleboard
