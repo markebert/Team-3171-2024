@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -237,10 +238,10 @@ public class Robot extends TimedRobot implements RobotProperties {
       double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroPIDController.getSensorValue()) : leftStickAngle;
 
       // Operator Controller Values
-      //debugTab.addString("Left Stick Angle", () -> String.format("%.2f\u00B0", leftStickAngle));
-      //debugTab.addString("Left Stick Velocity", () -> String.format("%.2f", leftStickMagnitude));
-      //debugTab.addString("Right Stick X", () -> String.format("%.2f", rightStickX));
-      //debugTab.addString("Field Adjusted Angle", () -> String.format("%.2f\u00B0", fieldCorrectedAngle));
+      // debugTab.addString("Left Stick Angle", () -> String.format("%.2f\u00B0", leftStickAngle));
+      // debugTab.addString("Left Stick Velocity", () -> String.format("%.2f", leftStickMagnitude));
+      // debugTab.addString("Right Stick X", () -> String.format("%.2f", rightStickX));
+      // debugTab.addString("Field Adjusted Angle", () -> String.format("%.2f\u00B0", fieldCorrectedAngle));
     }
   }
 
@@ -266,7 +267,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     zeroEdgeTrigger = zeroTrigger;
 
     // LED Updates
-    Color color = upperFeedColorSensor.getColor();
+    Color color = !feedSensor.get() ? Color.kGreen : DriverStation.getAlliance().get() == Alliance.Blue ? Color.kBlue : Color.kRed;
     for (int i = 0; i < m_ledBuffer.getLength(); i++) {
       m_ledBuffer.setLED(i, color);
     }
@@ -446,8 +447,8 @@ public class Robot extends TimedRobot implements RobotProperties {
 
     // If the layover button is not pressed, but the previous cycle it was.
     if (!button_layover && doLayoverShot) {
-        shooterController.setShooterTiltPosition(0);
-        doLayoverShot = false;
+      shooterController.setShooterTiltPosition(0);
+      doLayoverShot = false;
     }
 
     // Drive Controls
@@ -502,7 +503,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     }
 
     if (button_layover) {
-      
+
     }
 
     // Lift Controls
