@@ -441,7 +441,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Layover button
     final boolean button_layover = driveControllerState.getXButton();
     if (button_layover) {
-      shooterController.setShooterTiltPosition(-60);
+      shooterController.setShooterTiltPosition(60);
       doLayoverShot = true;
     }
 
