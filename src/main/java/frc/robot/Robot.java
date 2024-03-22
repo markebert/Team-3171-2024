@@ -439,7 +439,7 @@ public class Robot extends TimedRobot implements RobotProperties {
     final double fieldCorrectedAngle = FIELD_ORIENTED_SWERVE ? Normalize_Gryo_Value(leftStickAngle - gyroValue) : leftStickAngle;
 
     // Layover button
-    final boolean button_layover = driveControllerState.getXButton();
+    final boolean button_layover = operatorControllerState.getLeftBumper();
     if (button_layover) {
       shooterController.setShooterTiltPosition(60);
       doLayoverShot = true;
