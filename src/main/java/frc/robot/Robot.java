@@ -67,7 +67,10 @@ public class Robot extends TimedRobot implements RobotProperties {
   private ColorSensorV3 upperFeedColorSensor;
 
   // Linear Actuators
-  private CANSparkMax leftAcuator, rightAcuator;
+  //private CANSparkMax leftAcuator, rightAcuator;
+
+  // New Lift Motor
+  private CANSparkMax newLiftMotor;
 
   // Auton Recorder
   private AutonRecorder autonRecorder;
@@ -125,8 +128,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     feedSensor = new DigitalInput(5);
 
     // Linear Acuators
-    leftAcuator = new CANSparkMax(LEFT_ACUATOR_CAN_ID, MotorType.kBrushed);
-    rightAcuator = new CANSparkMax(RIGHT_ACUATOR_CAN_ID, MotorType.kBrushed);
+    /*leftAcuator*/newLiftMotor = new CANSparkMax(LEFT_ACUATOR_CAN_ID, MotorType.kBrushless);
+    // rightAcuator = new CANSparkMax(RIGHT_ACUATOR_CAN_ID, MotorType.kBrushed);
 
     // Sensors
     gyro = new Pigeon2(GYRO_CAN_ID, "canivore");
@@ -374,8 +377,8 @@ public class Robot extends TimedRobot implements RobotProperties {
     // Disable all controllers
     swerveDrive.disable();
     gyroPIDController.disablePID();
-    leftAcuator.disable();
-    rightAcuator.disable();
+    /*leftAcuator*/newLiftMotor.disable();
+    //rightAcuator.disable();
     shooterController.disable();
 
     // Once auton recording is done, save the data to a file, if there is any
@@ -510,11 +513,11 @@ public class Robot extends TimedRobot implements RobotProperties {
     if (DriverStation.isFMSAttached() && DriverStation.isTeleop() && Timer.getMatchTime() < 30) {
       final boolean raiseLeftArm = driveControllerState.getLeftBumper();
       final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
-      leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
+      /*leftAcuator*/newLiftMotor.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
 
       final boolean raiseRightArm = driveControllerState.getRightBumper();
       final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
-      rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
+      // rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
 
       if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
         // Force the shooter down
@@ -523,11 +526,11 @@ public class Robot extends TimedRobot implements RobotProperties {
     } else {
       final boolean raiseLeftArm = driveControllerState.getLeftBumper();
       final boolean lowerLeftArm = Deadzone(.02, driveControllerState.getLeftTriggerAxis()) != 0;
-      leftAcuator.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
+      /*leftAcuator*/newLiftMotor.set(raiseLeftArm ? 1 : lowerLeftArm ? -1 : 0);
 
       final boolean raiseRightArm = driveControllerState.getRightBumper();
       final boolean lowerRightArm = Deadzone(.02, driveControllerState.getRightTriggerAxis()) != 0;
-      rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
+      // rightAcuator.set(raiseRightArm ? 1 : lowerRightArm ? -1 : 0);
 
       if (raiseLeftArm || lowerLeftArm || raiseRightArm || lowerRightArm) {
         // Force the shooter down
