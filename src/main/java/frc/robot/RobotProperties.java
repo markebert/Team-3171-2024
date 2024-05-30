@@ -63,12 +63,12 @@ public interface RobotProperties {
                         put("SHORT_SHOT", new ShooterShot(22, 550, 800));
                         put("NORMAL_SHOT", new ShooterShot(37, 2500, 3000));
                         put("FAR_SHOT", new ShooterShot(59, 4000, 4000));
-                        put("YEET_SHOT", new ShooterShot(45, 3000, 3000));
+                        put("YEET_SHOT", new ShooterShot(45, 2900, 2900));
                 }
         };
 
         public static final int SHOOTER_TILT_ID = 4;
-        public static final double SHOOTER_TILT_ZERO_POSITION = 180;
+        public static final double SHOOTER_TILT_ZERO_POSITION = 12.3;
         public static final double SHOOTER_TILT_MIN_POSITION = -60, SHOOTER_TILT_MAX_POSITION = 70;
 
         /** Feeder Variables **/
@@ -134,8 +134,9 @@ public interface RobotProperties {
         //public static final double TILT_KP = .02, TILT_KI = .0005, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
        
         /** new tilt PID variables **/
-        public static final double TILT_KP = .0125, TILT_KI = .000125, TILT_KD = -.0001, TILT_MIN = -.75, TILT_MAX = .75;
-        
+        // public static final double TILT_KP = .0125, TILT_KI = .000125, TILT_KD = -.0001, TILT_MIN = -.75, TILT_MAX = .75;
+        public static final double TILT_KP = .015, TILT_KI = .0, TILT_KD = -.02, TILT_MIN = -.75, TILT_MAX = .75;
+
         /** Auton Mode Constants **/
         public static final String DEFAULT_AUTON = "Disabled";
 

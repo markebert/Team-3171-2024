@@ -3,8 +3,9 @@ package frc.team3171.controllers;
 // Java Imports
 import java.util.HashMap;
 
-import edu.wpi.first.apriltag.AprilTag;
 // FRC Imports
+import edu.wpi.first.apriltag.AprilTag;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -167,8 +168,8 @@ public class VisionController implements RobotProperties {
                     if (result.hasTargets()) {
                         for (PhotonTrackedTarget target : result.getTargets()) {
                             if (target.getFiducialId() == targetID) {
-                                final AprilTag aprilTag = AprilTagLayout.getTags().get(targetID);
-                                final double targetHeightMeters = aprilTag.pose.getZ();
+                                final Pose3d aprilTagPose = AprilTagLayout.getTagPose(targetID).get();
+                                final double targetHeightMeters = aprilTagPose.getZ();
                                 range = PhotonUtils.calculateDistanceToTargetMeters(
                                         photonCameraConfig.getCAMERA_HEIGHT_METERS(),
                                         targetHeightMeters,
